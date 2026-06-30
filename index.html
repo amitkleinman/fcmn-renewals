@@ -98,9 +98,16 @@
   .save-indicator.show{opacity:1}
   .save-indicator .ok{color:var(--accent2)}
   .loading{padding:60px; text-align:center; color:var(--muted)}
+  mark.hl{background:var(--accent); color:#14161c; padding:0 2px; border-radius:3px}
+  .export-btn{
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:7px 14px; border-radius:8px; cursor:pointer; font-size:12.5px;
+  }
+  .export-btn:hover{border-color:var(--accent2); color:var(--accent2)}
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#2b3040;border-radius:6px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -150,6 +157,14 @@ const renewalsCol = collection(db, "renewals");
 let renewals = {}; // id -> true/false
 let activeGroup = null;
 let activeSection = null;
+
+const SEATS = {
+  '101': 202, '102': 389, '103L': 258, '103R': 68, '104': 118,
+  '105C': 289, '105L': 190, '105R': 190, '106': 117, '107': 324,
+  '108': 389, '109': 207, '201': 220, '202': 331, '203L': 218, '203R': 202,
+  '204': 462, '205': 200, '206L': 256, '206R': 182, '207': 439,
+  '208': 332, '209': 222, 'PLATINUM': 160, 'R2': 14, 'L2': 14, 'L3': 14
+};
 
 const GROUPS = [
   {id:'lower', label:'יציע תחתון'},
@@ -236,6 +251,10 @@ function computeStats(tickets){
   return {total, renewed, left: total-renewed, pct: total? Math.round(renewed/total*100):0};
 }
 
+function seatsFor(section){
+  return SEATS[section] != null ? SEATS[section] : null;
+}
+
 function renderGroupTabs(grouped, sections){
   const el = document.getElementById('groupTabs');
   el.innerHTML = '';
@@ -243,11 +262,22 @@ function renderGroupTabs(grouped, sections){
     const groupSections = sections.filter(s=>classifyGroup(s)===g.id);
     if(groupSections.length===0) continue;
     let groupTickets = [];
-    for(const s of groupSections) groupTickets = groupTickets.concat(grouped.get(s));
+    let seatTotal = 0, seatKnown = true;
+    for(const s of groupSections){
+      groupTickets = groupTickets.concat(grouped.get(s));
+      const sv = seatsFor(s);
+      if(sv == null) seatKnown = false; else seatTotal += sv;
+    }
+    for(const s of Object.keys(SEATS)){
+      if(classifyGroup(s)===g.id && !groupSections.includes(s) && SEATS[s] != null){
+        seatTotal += SEATS[s];
+      }
+    }
     const stats = computeStats(groupTickets);
+    const seatsLabel = seatKnown ? `${seatTotal.toLocaleString()} מקומות · ` : '';
     const tab = document.createElement('div');
     tab.className = 'group-tab' + (g.id===activeGroup ? ' active':'');
-    tab.innerHTML = `<span>${g.label}</span><span class="count">${stats.renewed}/${stats.total} (${stats.pct}%)</span>`;
+    tab.innerHTML = `<span>${g.label}</span><span class="count">${seatsLabel}${stats.total} מנויים · ${stats.renewed} חודשו (${stats.pct}%)</span>`;
     tab.addEventListener('click', ()=>{
       activeGroup = g.id;
       activeSection = null;
@@ -264,9 +294,11 @@ function renderTabs(grouped, sections){
   for(const section of groupSections){
     const rows = grouped.get(section);
     const stats = computeStats(rows);
+    const sv = seatsFor(section);
+    const seatsLabel = sv != null ? `${sv} מקומות · ` : '';
     const tab = document.createElement('div');
     tab.className = 'tab' + (section===activeSection ? ' active':'');
-    tab.innerHTML = `<span>${escapeHtml(section)}</span><span class="count">${stats.total}</span><span class="pct">${stats.pct}%</span>`;
+    tab.innerHTML = `<span>${escapeHtml(section)}</span><span class="count">${seatsLabel}${stats.total} מנויים</span><span class="pct">${stats.renewed} חודשו (${stats.pct}%)</span>`;
     tab.addEventListener('click', ()=>{
       activeSection = section;
       render();
@@ -304,11 +336,17 @@ function renderPanel(grouped, section){
 
   const head = document.createElement('div');
   head.className = 'section-panel-head';
+  const svPanel = seatsFor(section);
+  const seatsLabelPanel = svPanel != null ? `${svPanel} מקומות · ` : '';
   head.innerHTML = `
-    <h2>${escapeHtml(section)} <span class="muted">(${rows.length} מנויים)</span></h2>
-    <div class="progress" id="panelProgress">${stats.renewed}/${stats.total} חודשו (${stats.pct}%)</div>
+    <h2>${escapeHtml(section)} <span class="muted">(${seatsLabelPanel}${rows.length} מנויים)</span></h2>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="export-btn" id="exportBtn">ייצוא לא-מחודשים לאקסל</button>
+      <div class="progress" id="panelProgress">${stats.renewed}/${stats.total} חודשו (${stats.pct}%)</div>
+    </div>
   `;
   panel.appendChild(head);
+  head.querySelector('#exportBtn').addEventListener('click', ()=>exportNotRenewed(section, rows));
 
   const table = document.createElement('table');
   table.innerHTML = `
@@ -364,6 +402,9 @@ function renderPanel(grouped, section){
 
 function render(){
   const grouped = groupBySection(TICKETS);
+  for(const s of Object.keys(SEATS)){
+    if(!grouped.has(s)) grouped.set(s, []);
+  }
   const sections = Array.from(grouped.keys()).sort(naturalSectionSort);
 
   if(!activeGroup){
@@ -376,8 +417,118 @@ function render(){
 
   renderGroupTabs(grouped, sections);
   renderTabs(grouped, sections);
-  renderPanel(grouped, activeSection);
+
+  const searchTerm = document.getElementById('search').value.trim();
+  if(searchTerm){
+    renderGlobalSearch(grouped, sections, searchTerm);
+  } else {
+    renderPanel(grouped, activeSection);
+  }
   updateStatsBar();
+}
+
+function highlightText(text, term){
+  const s = String(text);
+  if(!term) return escapeHtml(s);
+  const idx = s.toLowerCase().indexOf(term.toLowerCase());
+  if(idx === -1) return escapeHtml(s);
+  return escapeHtml(s.slice(0,idx)) + '<mark class="hl">' + escapeHtml(s.slice(idx, idx+term.length)) + '</mark>' + escapeHtml(s.slice(idx+term.length));
+}
+
+function renderGlobalSearch(grouped, sections, term){
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const filter = document.getElementById('filter').value;
+  const lower = term.toLowerCase();
+
+  const matchesBySection = [];
+  for(const section of sections){
+    const rows = (grouped.get(section)||[]).filter(t=>{
+      if(filter==='yes' && !renewals[t.id]) return false;
+      if(filter==='no' && renewals[t.id]) return false;
+      const hay = (t.name+' '+t.email+' '+t.phone).toLowerCase();
+      return hay.includes(lower);
+    });
+    if(rows.length) matchesBySection.push({section, rows: rows.sort((a,b)=>a.row-b.row||a.seat-b.seat)});
+  }
+
+  const totalMatches = matchesBySection.reduce((sum,g)=>sum+g.rows.length,0);
+  const totalSections = matchesBySection.length;
+
+  if(totalMatches===0){
+    main.innerHTML = '<div class="loading">לא נמצאו תוצאות בכל העמדות</div>';
+    return;
+  }
+
+  const summary = document.createElement('div');
+  summary.style.cssText = 'padding:10px 4px 14px; font-size:13px; color:var(--muted)';
+  summary.textContent = totalSections > 1
+    ? `נמצאו ${totalMatches} תוצאות ב-${totalSections} עמדות שונות`
+    : `נמצאו ${totalMatches} תוצאות בעמדה ${matchesBySection[0].section}`;
+  main.appendChild(summary);
+
+  for(const group of matchesBySection){
+    const panel = document.createElement('div');
+    panel.className = 'section-panel';
+    panel.style.marginBottom = '14px';
+
+    const head = document.createElement('div');
+    head.className = 'section-panel-head';
+    head.style.cursor = 'pointer';
+    head.innerHTML = `<h2>${escapeHtml(group.section)} <span class="muted">(${group.rows.length} תוצאות)</span></h2>`;
+    head.addEventListener('click', ()=>{
+      activeGroup = classifyGroup(group.section);
+      activeSection = group.section;
+      document.getElementById('search').value = '';
+      render();
+    });
+    panel.appendChild(head);
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead><tr>
+        <th class="checkbox-cell">חידוש</th>
+        <th>שם</th>
+        <th>שורה</th>
+        <th>מושב</th>
+        <th>אימייל</th>
+        <th>טלפון</th>
+      </tr></thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+    for(const t of group.rows){
+      const tr = document.createElement('tr');
+      const checked = !!renewals[t.id];
+      if(checked) tr.classList.add('renewed');
+      tr.innerHTML = `
+        <td class="checkbox-cell"><input type="checkbox" data-id="${t.id}" data-section="${escapeHtml(group.section)}" ${checked?'checked':''}></td>
+        <td class="name">${highlightText(t.name, term)}</td>
+        <td>${t.row}</td>
+        <td>${t.seat}</td>
+        <td class="muted">${highlightText(t.email, term)}</td>
+        <td class="muted">${highlightText(t.phone, term)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    table.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('click', e=>e.stopPropagation());
+      cb.addEventListener('change', async (e)=>{
+        const id = e.target.getAttribute('data-id');
+        const value = e.target.checked;
+        renewals[id] = value;
+        e.target.closest('tr').classList.toggle('renewed', value);
+        updateStatsBar();
+        const grouped2 = groupBySection(TICKETS);
+        for(const s of Object.keys(SEATS)){ if(!grouped2.has(s)) grouped2.set(s, []); }
+        const sections2 = Array.from(grouped2.keys()).sort(naturalSectionSort);
+        renderGroupTabs(grouped2, sections2);
+        await setRenewal(id, value);
+      });
+    });
+    panel.appendChild(table);
+    main.appendChild(panel);
+  }
 }
 
 function updateStatsBar(){
@@ -390,12 +541,32 @@ function updateStatsBar(){
   `;
 }
 
+function exportNotRenewed(section, rows){
+  const notRenewed = rows.filter(t=>!renewals[t.id]).sort((a,b)=> a.row-b.row || a.seat-b.seat);
+  if(notRenewed.length===0){
+    alert('כל המנויים בעמדה זו חודשו - אין מה לייצא');
+    return;
+  }
+  const data = notRenewed.map(t=>({
+    'שם': t.name,
+    'אימייל': t.email,
+    'שורה': t.row,
+    'מושב': t.seat,
+    'טלפון': t.phone
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:22},{wch:28},{wch:8},{wch:8},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, section.slice(0,28));
+  XLSX.writeFile(wb, `לא_מחודשים_${section}.xlsx`);
+}
+
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-document.getElementById('search').addEventListener('input', ()=>renderPanel(groupBySection(TICKETS), activeSection));
-document.getElementById('filter').addEventListener('change', ()=>renderPanel(groupBySection(TICKETS), activeSection));
+document.getElementById('search').addEventListener('input', ()=>render());
+document.getElementById('filter').addEventListener('change', ()=>render());
 
 startLiveSync();
 </script>
