@@ -258,9 +258,9 @@ processBtn.addEventListener('click', async ()=>{
 
   // Save meta to Firestore
   await setDoc(doc(db,'meta','stats'), {
-    totalNewSeason: totalNewSeason + kasherCount,
+    totalNewSeason: totalNewSeason,
     newBuyers,
-    totalRevenue: totalRevenue + kasherRevenue,
+    totalRevenue: totalRevenue,
     kasherCount,
     kasherRevenue,
     lastUpdated: timestamp,
