@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -163,27 +164,39 @@ processBtn.addEventListener('click', async ()=>{
   addLog(`נמצאו: ${uniqueIds.length} מחודשים, ${newBuyers} חדשים, סה"כ ${totalNewSeason}`);
   addLog(`הכנסות ברוטו: ₪${totalRevenue.toLocaleString()}`);
 
-  // Get current renewals from Firestore
-  addLog('מעדכן Firestore...', 'head');
+  // Full replace: delete all existing renewals, then write new ones
+  addLog('מנקה מחודשים קיימים...', 'head');
   const renewalsCol = collection(db, 'renewals');
   const snap = await new Promise(resolve=>onSnapshot(renewalsCol, resolve));
-  const existingIds = new Set();
-  snap.forEach(d=>{ if(d.data().renewed) existingIds.add(d.id); });
+  const existingDocs = [];
+  snap.forEach(d=>existingDocs.push(d.id));
 
-  const toAdd = uniqueIds.filter(id=>!existingIds.has(String(id)));
-  addLog(`מסמן ${toAdd.length} מחודשים חדשים...`);
+  // Delete in batches of 500
+  let deleted = 0;
+  while(deleted < existingDocs.length){
+    const batch = writeBatch(db);
+    const chunk = existingDocs.slice(deleted, deleted+500);
+    for(const id of chunk){
+      batch.delete(doc(db,'renewals',id));
+    }
+    await batch.commit();
+    deleted += chunk.length;
+  }
+  addLog(`נמחקו ${deleted} רשומות ישנות`);
+
+  addLog(`כותב ${uniqueIds.length} מחודשים...`, 'head');
 
   // Write in batches of 500
   let saved = 0;
-  while(saved < toAdd.length){
+  while(saved < uniqueIds.length){
     const batch = writeBatch(db);
-    const chunk = toAdd.slice(saved, saved+500);
+    const chunk = uniqueIds.slice(saved, saved+500);
     for(const id of chunk){
       batch.set(doc(db,'renewals',String(id)), {renewed:true});
     }
     await batch.commit();
     saved += chunk.length;
-    addLog(`שמר ${saved}/${toAdd.length}...`);
+    addLog(`שמר ${saved}/${uniqueIds.length}...`);
   }
 
   // Get timestamp
