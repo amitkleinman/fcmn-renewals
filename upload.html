@@ -60,6 +60,21 @@
   <p><b>גרור קובץ Excel לכאן</b><br>או לחץ לבחירת קובץ</p>
   <input type="file" id="fileInput" accept=".xlsx,.xls">
 </div>
+<div id="kasherFields" style="display:none; margin-top:16px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:16px; width:100%; max-width:500px; gap:12px; flex-direction:column">
+  <div style="font-size:13px; color:var(--muted); margin-bottom:4px">פרטי מנוי כשר (יש להזין ידנית)</div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:4px; flex:1">
+      <label style="font-size:12px; color:var(--muted)">מספר מנויים כשרים</label>
+      <input type="number" id="kasherCount" min="0" value="0"
+        style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:7px; font-size:14px; width:100%">
+    </div>
+    <div style="display:flex; flex-direction:column; gap:4px; flex:1">
+      <label style="font-size:12px; color:var(--muted)">שווי כספי (₪)</label>
+      <input type="number" id="kasherRevenue" min="0" value="0"
+        style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:7px; font-size:14px; width:100%">
+    </div>
+  </div>
+</div>
 <button class="btn" id="processBtn">עבד קובץ</button>
 
 <div class="log" id="log"></div>
@@ -116,6 +131,8 @@ function handleFile(file){
     parsedData = XLSX.utils.sheet_to_json(ws, {defval:''});
     dropZone.querySelector('p').innerHTML = `<b>${file.name}</b><br><span style="color:var(--accent2)">${parsedData.length} שורות נקראו ✓</span>`;
     processBtn.style.display = 'inline-block';
+    const kf = document.getElementById('kasherFields');
+    kf.style.display = 'flex';
   };
   reader.readAsArrayBuffer(file);
 }
@@ -124,6 +141,8 @@ processBtn.addEventListener('click', async ()=>{
   if(!parsedData) return;
   processBtn.disabled = true;
   processBtn.textContent = 'מעבד...';
+  const kasherCount = parseInt(document.getElementById('kasherCount').value) || 0;
+  const kasherRevenue = parseInt(document.getElementById('kasherRevenue').value) || 0;
   logEl.style.display = 'block';
   logEl.innerHTML = '';
 
@@ -239,9 +258,11 @@ processBtn.addEventListener('click', async ()=>{
 
   // Save meta to Firestore
   await setDoc(doc(db,'meta','stats'), {
-    totalNewSeason,
+    totalNewSeason: totalNewSeason + kasherCount,
     newBuyers,
-    totalRevenue,
+    totalRevenue: totalRevenue + kasherRevenue,
+    kasherCount,
+    kasherRevenue,
     lastUpdated: timestamp,
     updatedAt: now.toISOString(),
     newBuyersList: newBuyersList
