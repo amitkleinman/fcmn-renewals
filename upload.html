@@ -154,6 +154,7 @@ processBtn.addEventListener('click', async ()=>{
   const newBuyersList = [];
   let totalRevenue = 0;
   let totalRenewals = 0;
+  const seatStatus = {}; // key: "section|row|seat" → {status: 'renew'|'new', name}
 
   for(const row of parsedData){
     const section = String(row['seat.section']||'').trim();
@@ -166,16 +167,17 @@ processBtn.addEventListener('click', async ()=>{
     if(!PRICE_MAP[section]) continue; // VIP - out of scope
 
     const [newPrice, renewPrice] = PRICE_MAP[section];
-    const isRenewal = (price === renewPrice || price === 0);
+    const isRenewal = (price === renewPrice || price === 0 || isNaN(price));
+    const key = `${section}|${r}|${s}`;
 
     if(isRenewal){
       totalRenewals++;
-      const key = `${section}|${r}|${s}`;
       const id = bySeat.get(key);
       if(id !== undefined) matchedIds.push(id);
-      // seat moved - still a renewal, just can't mark old seat
+      seatStatus[key] = {status: 'renew', name};
     } else {
       newBuyersList.push(`${name} | ${section} שורה ${r} מושב ${s}`);
+      seatStatus[key] = {status: 'new', name};
     }
   }
 
@@ -230,6 +232,10 @@ processBtn.addEventListener('click', async ()=>{
   const now = new Date();
   const pad = n=>String(n).padStart(2,'0');
   const timestamp = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // Save seat status map for map view
+  addLog('שומר מפת מושבים...');
+  await setDoc(doc(db,'meta','seatStatus'), seatStatus);
 
   // Save meta to Firestore
   await setDoc(doc(db,'meta','stats'), {
