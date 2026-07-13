@@ -799,14 +799,18 @@ function renderGlobalSearch(grouped, sections, term){
 
 function updateStatsBar(){
   const stats = computeStats(TICKETS);
+  const kasherLine = liveMeta.kasherCount > 0
+    ? `<div class="stat">מנויי כשר: <b class="badge yes">${liveMeta.kasherCount}</b> · <b style="color:var(--accent2)">₪${liveMeta.kasherRevenue.toLocaleString()}</b></div>`
+    : '';
   document.getElementById('stats').innerHTML = `
-    <div class="stat" style="font-size:16px; color:var(--text)">סה"כ מנויים עונה חדשה: <b style="font-size:18px; color:var(--accent)">${liveMeta.totalNewSeason}</b></div>
+    <div class="stat" style="font-size:16px; color:var(--text)">סה"כ מנויים עונה חדשה: <b style="font-size:18px; color:var(--accent)">${liveMeta.totalNewSeason + liveMeta.kasherCount}</b></div>
+    ${kasherLine}
     <div class="stat" style="margin-right:10px; border-right:1px solid var(--border); padding-right:14px">סה"כ מנויים שנה שעברה: <b>${stats.total}</b></div>
     <div class="stat">מחודשים: <b class="badge yes">${stats.renewed}</b></div>
     <div class="stat">טרם חודשו: <b class="badge no">${stats.left}</b></div>
     <div class="stat">אחוז חידוש: <b>${stats.pct}%</b></div>
     <div class="stat">מנויים חדשים (עונה חדשה): <b class="badge yes clickable-badge" id="newBuyersBadge" title="לחץ לצפייה ברשימה">${liveMeta.newBuyers}</b></div>
-    <div class="stat" style="margin-right:10px; border-right:1px solid var(--border); padding-right:14px">סה"כ הכנסות (ברוטו): <b style="color:var(--accent2)">₪${liveMeta.totalRevenue.toLocaleString()}</b></div>
+    <div class="stat" style="margin-right:10px; border-right:1px solid var(--border); padding-right:14px">סה"כ הכנסות (ברוטו): <b style="color:var(--accent2)">₪${(liveMeta.totalRevenue + liveMeta.kasherRevenue).toLocaleString()}</b></div>
     <div class="stat" style="color:var(--muted); font-size:12px">עודכן לאחרונה: ${liveMeta.lastUpdated}</div>
   `;
 }
@@ -883,7 +887,9 @@ let liveMeta = {
   newBuyers: NEW_BUYERS_COUNT,
   totalRevenue: TOTAL_REVENUE,
   lastUpdated: LAST_UPDATED,
-  newBuyersList: []
+  newBuyersList: [],
+  kasherCount: 0,
+  kasherRevenue: 0
 };
 
 let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
@@ -898,6 +904,8 @@ let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
       liveMeta.totalRevenue = d.totalRevenue ?? TOTAL_REVENUE;
       liveMeta.lastUpdated = d.lastUpdated ?? LAST_UPDATED;
       liveMeta.newBuyersList = d.newBuyersList ?? [];
+      liveMeta.kasherCount = d.kasherCount ?? 0;
+      liveMeta.kasherRevenue = d.kasherRevenue ?? 0;
       updateStatsBar();
     }
     const snapSS = await getDoc(doc(db,'meta','seatStatus'));
