@@ -183,7 +183,15 @@ processBtn.addEventListener('click', async ()=>{
     const name = String(row['name']||'');
     totalRevenue += price;
 
-    if(!PRICE_MAP[section]) continue; // VIP - out of scope
+    if(!PRICE_MAP[section]){
+      // VIP - no price classification, match by seat and treat as renewal
+      const key = `${section}|${r}|${s}`;
+      const id = bySeat.get(key);
+      if(id !== undefined) matchedIds.push(id);
+      seatStatus[key] = {status: 'renew', name};
+      totalRenewals++;
+      continue;
+    }
 
     const [newPrice, renewPrice] = PRICE_MAP[section];
     const isRenewal = (price === renewPrice || price === 0 || isNaN(price));
