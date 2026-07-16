@@ -83,7 +83,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc
+  getFirestore, doc, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -215,45 +215,16 @@ processBtn.addEventListener('click', async ()=>{
   addLog(`מחודשים (לפי מחיר): ${totalRenewals} · מסומנים: ${uniqueIds.length} · חדשים: ${newBuyers} · סה"כ: ${totalNewSeason}`);
   addLog(`הכנסות ברוטו: ₪${totalRevenue.toLocaleString()}`);
 
-  // Full replace: delete all existing renewals, then write new ones
-  addLog('מנקה מחודשים קיימים...', 'head');
-  const renewalsCol = collection(db, 'renewals');
-  const snap = await new Promise(resolve=>onSnapshot(renewalsCol, resolve));
-  const existingDocs = [];
-  snap.forEach(d=>existingDocs.push(d.id));
-
-  // Delete in batches of 500
-  let deleted = 0;
-  while(deleted < existingDocs.length){
-    const batch = writeBatch(db);
-    const chunk = existingDocs.slice(deleted, deleted+500);
-    for(const id of chunk){
-      batch.delete(doc(db,'renewals',id));
-    }
-    await batch.commit();
-    deleted += chunk.length;
-  }
-  addLog(`נמחקו ${deleted} רשומות ישנות`);
-
-  // Merge always-renewed IDs (subscribers who moved seats)
-  // אולייניק - moved seats, always mark all 50 last-season tickets as renewed
+  // Full replace: write all renewals as single document (2 ops total)
+  addLog('שומר מחודשים...', 'head');
   const OLEINIK_IDS = [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,1792,1793,1794];
   const finalIds = [...new Set([...uniqueIds, ...OLEINIK_IDS])];
 
-  addLog(`כותב ${finalIds.length} מחודשים...`, 'head');
+  const renewalsMap = {};
+  for(const id of finalIds) renewalsMap[String(id)] = true;
 
-  // Write in batches of 500
-  let saved = 0;
-  while(saved < finalIds.length){
-    const batch = writeBatch(db);
-    const chunk = finalIds.slice(saved, saved+500);
-    for(const id of chunk){
-      batch.set(doc(db,'renewals',String(id)), {renewed:true});
-    }
-    await batch.commit();
-    saved += chunk.length;
-    addLog(`שמר ${saved}/${finalIds.length}...`);
-  }
+  await setDoc(doc(db,'meta','renewals'), renewalsMap);
+  addLog(`✓ נשמרו ${finalIds.length} מחודשים (מסמך יחיד)`);
 
   // Get timestamp
   const now = new Date();
