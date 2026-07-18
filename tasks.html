@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ניהול משימות - FCMN</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1f2330; --border:#2b3040;
+    --text:#e8eaf0; --muted:#9aa3b5; --accent:#f5c518; --accent2:#2dd4a3;
+    --danger:#ef5b5b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--text); font-family:"Segoe UI",Arial,sans-serif; min-height:100vh; padding:20px}
+  header{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px}
+  h1{font-size:20px; display:flex; align-items:center; gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .back-link{color:var(--muted); text-decoration:none; font-size:13px; border:1px solid var(--border); padding:6px 12px; border-radius:7px}
+  .back-link:hover{color:var(--text)}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px}
+  .filter-btn{background:var(--panel2); border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:999px; cursor:pointer; font-size:13px}
+  .filter-btn.active{border-color:var(--accent); color:var(--accent)}
+  .tasks-grid{display:flex; flex-direction:column; gap:10px}
+  .task-item{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:16px; display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start;
+  }
+  .task-item.done{opacity:0.6}
+  .task-desc{font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px}
+  .task-meta{font-size:12px; color:var(--muted); display:flex; gap:16px; flex-wrap:wrap}
+  .task-actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+  .status-btn{padding:4px 12px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; border:none; white-space:nowrap}
+  .status-btn.open{background:#332323; color:var(--danger)}
+  .status-btn.progress{background:#2a3320; color:#a3d96c}
+  .status-btn.done{background:#16332a; color:var(--accent2)}
+  .delete-btn{background:none; border:none; color:#444; cursor:pointer; font-size:14px; padding:2px 6px}
+  .delete-btn:hover{color:var(--danger)}
+  .empty{text-align:center; color:var(--muted); padding:60px; font-size:14px}
+  .count{font-size:13px; color:var(--muted); margin-bottom:12px}
+  .count b{color:var(--text)}
+
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot"></span> ניהול משימות</h1>
+  <a href="index.html" class="back-link">← חזור לטרקר</a>
+</header>
+
+<button id="newTaskBtn" style="position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px #0006;z-index:100">📋</button>
+
+<!-- New Task Modal -->
+<div id="newTaskModal" style="display:none;position:fixed;inset:0;background:#000a;z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;width:90%;max-width:480px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:15px;font-weight:600">משימה חדשה</span>
+      <button id="newTaskClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11.5px;color:var(--muted)">שם הפותח</label>
+        <input type="text" id="taskOpener" placeholder="שמך" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11.5px;color:var(--muted)">לטיפול</label>
+        <input type="text" id="taskAssignee" placeholder="למי מועבר" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px">
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">
+      <label style="font-size:11.5px;color:var(--muted)">תיאור המשימה</label>
+      <textarea id="taskDesc" placeholder="תאר את המשימה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;resize:vertical;min-height:70px;font-family:inherit"></textarea>
+    </div>
+    <button id="taskAddBtn" style="background:var(--accent);color:#14161c;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%">+ הוסף משימה</button>
+  </div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">הכל</button>
+  <button class="filter-btn" data-filter="open">פתוח</button>
+  <button class="filter-btn" data-filter="progress">הועבר לטיפול</button>
+  <button class="filter-btn" data-filter="done">הושלם</button>
+</div>
+
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+  <select id="filterOpener" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:7px; font-size:13px;">
+    <option value="">כל הפותחים</option>
+  </select>
+  <select id="filterAssignee" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:7px; font-size:13px;">
+    <option value="">כל האחראים</option>
+  </select>
+</div>
+<div class="count" id="count"></div>
+<div class="tasks-grid" id="taskList"><div class="empty">טוען...</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",
+  authDomain: "fcmn-renewals-26-27.firebaseapp.com",
+  projectId: "fcmn-renewals-26-27",
+  storageBucket: "fcmn-renewals-26-27.firebasestorage.app",
+  messagingSenderId: "681981226078",
+  appId: "1:681981226078:web:9db5a9aedee0c56193d8cf"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const tasksCol = collection(db, 'tasks');
+
+const statusLabels = {open:'פתוח', progress:'הועבר לטיפול', done:'הושלם'};
+const statusOrder = ['open','progress','done'];
+let allTasks = [];
+let currentFilter = 'all';
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function loadTasks(){
+  const snap = await getDocs(query(tasksCol, orderBy('createdTs','desc')));
+  allTasks = [];
+  snap.forEach(d => allTasks.push({id: d.id, ...d.data()}));
+
+  // Populate filter dropdowns
+  const openers = [...new Set(allTasks.map(t=>t.opener).filter(Boolean))];
+  const assignees = [...new Set(allTasks.map(t=>t.assignee).filter(Boolean))];
+  const openerSel = document.getElementById('filterOpener');
+  const assigneeSel = document.getElementById('filterAssignee');
+  const curOpener = openerSel.value;
+  const curAssignee = assigneeSel.value;
+  openerSel.innerHTML = '<option value="">כל הפותחים</option>' + openers.map(o=>`<option value="${o}" ${o===curOpener?'selected':''}>${o}</option>`).join('');
+  assigneeSel.innerHTML = '<option value="">כל האחראים</option>' + assignees.map(a=>`<option value="${a}" ${a===curAssignee?'selected':''}>${a}</option>`).join('');
+
+  renderTasks();
+}
+
+function renderTasks(){
+  const list = document.getElementById('taskList');
+  const countEl = document.getElementById('count');
+  const openerFilter = document.getElementById('filterOpener').value;
+  const assigneeFilter = document.getElementById('filterAssignee').value;
+  const filtered = allTasks.filter(t=>{
+    if(currentFilter !== 'all' && t.status !== currentFilter) return false;
+    if(openerFilter && t.opener !== openerFilter) return false;
+    if(assigneeFilter && t.assignee !== assigneeFilter) return false;
+    return true;
+  });
+
+  countEl.innerHTML = `<b>${filtered.length}</b> משימות מוצגות מתוך <b>${allTasks.length}</b>`;
+
+  if(filtered.length === 0){ list.innerHTML = '<div class="empty">אין משימות</div>'; return; }
+
+  list.innerHTML = '';
+  for(const t of filtered){
+    const item = document.createElement('div');
+    item.className = `task-item${t.status==='done'?' done':''}`;
+    item.innerHTML = `
+      <div>
+        <div class="task-desc">${escapeHtml(t.desc)}</div>
+        <div class="task-meta">
+          <span>📅 ${escapeHtml(t.openedAt)}</span>
+          <span>👤 ${escapeHtml(t.opener||'לא צוין')}</span>
+          <span>➡️ ${escapeHtml(t.assignee||'לא צוין')}</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="status-btn ${t.status}" data-id="${t.id}" data-status="${t.status}">${statusLabels[t.status]||t.status}</button>
+        <button class="delete-btn" data-id="${t.id}" title="מחק">🗑</button>
+      </div>`;
+
+    item.querySelector('.status-btn').addEventListener('click', async e=>{
+      const id = e.target.getAttribute('data-id');
+      const cur = e.target.getAttribute('data-status');
+      const next = statusOrder[(statusOrder.indexOf(cur)+1) % statusOrder.length];
+      await updateDoc(doc(db,'tasks',id), {status: next});
+      await loadTasks();
+    });
+
+    item.querySelector('.delete-btn').addEventListener('click', async e=>{
+      if(!confirm('למחוק משימה זו?')) return;
+      await deleteDoc(doc(db,'tasks',e.target.getAttribute('data-id')));
+      await loadTasks();
+    });
+
+    list.appendChild(item);
+  }
+}
+
+// Modal
+document.getElementById('newTaskBtn').addEventListener('click', ()=>{
+  document.getElementById('newTaskModal').style.display = 'flex';
+});
+document.getElementById('newTaskClose').addEventListener('click', ()=>{
+  document.getElementById('newTaskModal').style.display = 'none';
+});
+document.getElementById('newTaskModal').addEventListener('click', e=>{
+  if(e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+});
+document.getElementById('taskAddBtn').addEventListener('click', async ()=>{
+  const opener = document.getElementById('taskOpener').value.trim();
+  const assignee = document.getElementById('taskAssignee').value.trim();
+  const desc = document.getElementById('taskDesc').value.trim();
+  if(!desc){ alert('יש להזין תיאור משימה'); return; }
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('he-IL', {day:'2-digit',month:'2-digit',year:'numeric'});
+  await addDoc(tasksCol, { opener, assignee, desc, status:'open', openedAt:dateStr, createdTs:now.getTime() });
+  document.getElementById('taskDesc').value = '';
+  document.getElementById('newTaskModal').style.display = 'none';
+  await loadTasks();
+});
+
+// Filters
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.getAttribute('data-filter');
+    renderTasks();
+  });
+});
+document.getElementById('filterOpener').addEventListener('change', renderTasks);
+document.getElementById('filterAssignee').addEventListener('change', renderTasks);
+
+loadTasks();
+</script>
+</body>
+</html>
