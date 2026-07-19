@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -151,7 +152,21 @@ function renderTasks(){
   if(filtered.length === 0){ list.innerHTML = '<div class="empty">אין משימות</div>'; return; }
 
   list.innerHTML = '';
-  for(const t of filtered){
+
+  // Group by status
+  const openTasks = filtered.filter(t => t.status !== 'done');
+  const doneTasks = filtered.filter(t => t.status === 'done');
+
+  function renderGroup(tasks, groupLabel) {
+    if(tasks.length === 0) return;
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:13px;font-weight:700;color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:8px;margin-top:12px';
+    header.textContent = `${groupLabel} (${tasks.length})`;
+    list.appendChild(header);
+    for(const t of tasks) renderTask(t);
+  }
+
+  function renderTask(t) {
     const item = document.createElement('div');
     item.className = `task-item${t.status==='done'?' done':''}`;
     item.innerHTML = `
@@ -184,6 +199,9 @@ function renderTasks(){
 
     list.appendChild(item);
   }
+
+  renderGroup(openTasks, '🔴 משימות פתוחות');
+  renderGroup(doneTasks, '✅ משימות שהושלמו');
 }
 
 // Modal
