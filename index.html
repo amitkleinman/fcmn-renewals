@@ -227,6 +227,7 @@
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
     <h1><span class="dot"></span> מעקב חידוש מנויים</h1>
     <div style="display:flex; gap:8px; align-items:center; margin-top:4px">
+      <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
       <a href="upload.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📥 העלאת קובץ</a>
       <a href="tasks.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📋 ניהול משימות</a>
     </div>
@@ -1014,6 +1015,13 @@ const PRESEED_IDS = [1234, 1286, 1207, 1644, 1295, 517, 176, 175, 2334, 1456, 25
 // ── Task Management ──────────────────────────────────
 const tasksCol = collection(db, 'tasks');
 
+document.getElementById('priceBtn').addEventListener('click', ()=>{
+  document.getElementById('priceModal').style.display = 'flex';
+});
+document.getElementById('priceModal').addEventListener('click', e=>{
+  if(e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+});
+
 document.getElementById('taskBtn').addEventListener('click', ()=>{
   document.getElementById('taskModal').classList.add('open');
   loadTasks();
@@ -1087,6 +1095,13 @@ startLiveSync();
       <button class="modal-close" id="modalClose">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="priceModal" style="display:none;position:fixed;inset:0;background:#000a;z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:90vw;max-height:90vh;overflow:hidden;position:relative;">
+    <button onclick="document.getElementById('priceModal').style.display='none'" style="position:absolute;top:10px;left:10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;z-index:1;">✕</button>
+    <img src="https://amitkleinman.github.io/fcmn-renewals/prices.jpeg" style="display:block;max-width:90vw;max-height:90vh;object-fit:contain;">
   </div>
 </div>
 
