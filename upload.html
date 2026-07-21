@@ -155,11 +155,11 @@ function handleFile(file){
   reader.onload = e=>{
     const wb = XLSX.read(e.target.result, {type:'array'});
     const ws = wb.Sheets[wb.SheetNames[0]];
-    parsedData = XLSX.utils.sheet_to_json(ws, {defval:''});
+    parsedData = XLSX.utils.sheet_to_json(ws, {defval:''}).filter(r => r['name'] || r['category']);
     dropZone.querySelector('p').innerHTML = `<b>${file.name}</b><br><span style="color:var(--accent2)">${parsedData.length} שורות נקראו ✓</span>`;
     processBtn.style.display = 'inline-block';
     const kf = document.getElementById('kasherFields');
-    kf.style.display = 'flex';
+    kf.style.display = uploadType === 'season' ? 'flex' : 'none';
   };
   reader.readAsArrayBuffer(file);
 }
