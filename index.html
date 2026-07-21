@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -760,26 +759,39 @@ function renderGamePanel(gameId){
     const stats = document.createElement('div');
     stats.className = 'game-stats';
 
-    // Get all price levels
-    const priceLevels = Object.entries(data)
-      .filter(([k]) => k.startsWith('price_'))
-      .map(([k,v]) => ({ price: parseInt(k.replace('price_','')), count: v }))
-      .sort((a,b) => a.price - b.price);
+    const rows = [
+      { label: '🏟 מערבי תחתון', val: data.westernLower || 0 },
+      { label: '🏟 מערבי עליון', val: data.westernUpper || 0 },
+      { label: '⭐ כבוד', val: data.honor || 0 },
+    ];
 
-    if(priceLevels.length === 0){
-      stats.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">אין נתונים עדיין</div>';
+    if(!snap.exists() || !data.total){
+      stats.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">אין נתונים עדיין — העלה קובץ</div>';
     } else {
-      priceLevels.forEach(({price, count})=>{
+      rows.forEach(({label, val})=>{
         const row = document.createElement('div');
         row.className = 'game-row';
-        row.innerHTML = `<span class="price-label">₪${price} לכרטיס</span><span class="price-val">${count} כרטיסים · ₪${(price*count).toLocaleString()}</span>`;
+        row.innerHTML = `<span class="price-label">${label}</span><span class="price-val">${val} כרטיסים</span>`;
         stats.appendChild(row);
       });
+
+      // הזמנות - clickable to show list
+      const ordersCount = data.ordersCount || 0;
+      const ordersList = data.ordersList || [];
+      const ordersRow = document.createElement('div');
+      ordersRow.className = 'game-row';
+      ordersRow.innerHTML = `<span class="price-label">📋 הזמנות</span><span class="price-val" style="cursor:pointer;text-decoration:underline dotted;color:var(--accent2)" id="ordersToggle">${ordersCount} כרטיסים ▾</span>`;
+      stats.appendChild(ordersRow);
+
+      const orderListEl = document.createElement('div');
+      orderListEl.style.cssText = 'display:none;background:var(--bg);border-radius:8px;padding:10px;margin-top:4px;font-size:12.5px;color:var(--muted);max-height:200px;overflow-y:auto';
+      ordersList.forEach((name,i)=>{ const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f'; d.textContent=`${i+1}. ${name}`; orderListEl.appendChild(d); });
+      stats.appendChild(orderListEl);
+      ordersRow.querySelector('#ordersToggle').addEventListener('click',()=>{ orderListEl.style.display=orderListEl.style.display==='none'?'block':'none'; });
+
       const totalRow = document.createElement('div');
       totalRow.className = 'game-row';
-      const totalSold = data.totalSold || 0;
-      const totalRevenue = data.totalRevenue || 0;
-      totalRow.innerHTML = `<span>סה"כ</span><span style="color:var(--accent2)">${totalSold} כרטיסים · ₪${totalRevenue.toLocaleString()}</span>`;
+      totalRow.innerHTML = `<span>סה"כ</span><span style="color:var(--accent2);font-size:16px">${data.total || 0} כרטיסים</span>`;
       stats.appendChild(totalRow);
     }
 
@@ -1130,18 +1142,18 @@ document.getElementById('gamesBtn').addEventListener('click', async ()=>{
     for(const game of GAMES){
       const snap = await getDoc(doc(db,'games',game.id));
       const data = snap.exists() ? snap.data() : {};
-      const priceLevels = Object.entries(data)
-        .filter(([k]) => k.startsWith('price_'))
-        .map(([k,v]) => ({ price: parseInt(k.replace('price_','')), count: v }))
-        .sort((a,b) => a.price - b.price);
-      const totalSold = data.totalSold || 0;
-      const totalRevenue = data.totalRevenue || 0;
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px';
+      const sectionRows = [
+        {label:'🏟 מערבי תחתון',val:data.westernLower||0},
+        {label:'🏟 מערבי עליון',val:data.westernUpper||0},
+        {label:'⭐ כבוד',val:data.honor||0},
+        {label:'📋 הזמנות',val:data.ordersCount||0},
+      ];
       card.innerHTML = `<div style="font-size:14px;font-weight:600;margin-bottom:10px">${escapeHtml(game.name)}</div>` +
-        (priceLevels.length === 0 ? '<div style="color:var(--muted);font-size:13px">אין נתונים עדיין</div>' :
-          priceLevels.map(({price,count})=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f"><span style="color:var(--muted)">₪${price} לכרטיס</span><span>${count} כרטיסים · ₪${(price*count).toLocaleString()}</span></div>`).join('') +
-          `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0"><span>סה"כ</span><span style="color:var(--accent2)">${totalSold} כרטיסים · ₪${totalRevenue.toLocaleString()}</span></div>`
+        (!data.total ? '<div style="color:var(--muted);font-size:13px">אין נתונים עדיין</div>' :
+          sectionRows.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f"><span style="color:var(--muted)">${r.label}</span><span>${r.val} כרטיסים</span></div>`).join('') +
+          `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0"><span>סה"כ</span><span style="color:var(--accent2)">${data.total||0} כרטיסים</span></div>`
         );
       body.appendChild(card);
     }
