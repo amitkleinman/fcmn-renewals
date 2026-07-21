@@ -946,8 +946,8 @@ let liveMeta = {
   totalRevenue: TOTAL_REVENUE,
   lastUpdated: LAST_UPDATED,
   newBuyersList: [],
-  kasherCount: 6,
-  kasherRevenue: 3600,
+  kasherCount: 8,
+  kasherRevenue: 4800,
   netanyaRevenue: 0
 };
 
@@ -964,8 +964,8 @@ let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
       liveMeta.totalRevenue = Math.max(d.totalRevenue ?? 0, TOTAL_REVENUE);
       liveMeta.lastUpdated = d.lastUpdated && d.totalNewSeason >= TOTAL_NEW_SEASON ? d.lastUpdated : LAST_UPDATED;
       liveMeta.newBuyersList = d.newBuyersList ?? [];
-      liveMeta.kasherCount = d.kasherCount ?? 6;
-      liveMeta.kasherRevenue = d.kasherRevenue ?? 3600;
+      liveMeta.kasherCount = d.kasherCount ?? 8;
+      liveMeta.kasherRevenue = d.kasherRevenue ?? 4800;
       updateStatsBar();
     }
     const snapSS = await getDoc(doc(db,'meta','seatStatus'));
