@@ -113,6 +113,13 @@
     padding:7px 14px; border-radius:8px; cursor:pointer; font-size:12.5px;
   }
   .export-btn:hover{border-color:var(--accent2); color:var(--accent2)}
+  .game-panel{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .game-panel-head{padding:14px 20px;background:var(--panel2);font-size:15px;font-weight:600}
+  .game-stats{padding:16px 20px;display:flex;flex-direction:column;gap:8px}
+  .game-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #20242f;font-size:14px}
+  .game-row:last-child{border-bottom:none;font-weight:700;font-size:15px}
+  .game-row .price-label{color:var(--muted)}
+  .game-row .price-val{color:var(--text);font-weight:600}
   .modal-overlay{
     display:none; position:fixed; inset:0; background:#000a; z-index:999;
     align-items:center; justify-content:center;
@@ -228,6 +235,7 @@
     <h1><span class="dot"></span> מעקב חידוש מנויים</h1>
     <div style="display:flex; gap:8px; align-items:center; margin-top:4px">
       <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
+      <button id="gamesBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">⚽ משחקים</button>
       <a href="upload.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📥 העלאת קובץ</a>
       <a href="tasks.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📋 ניהול משימות</a>
     </div>
@@ -286,6 +294,10 @@ const SEATS = {
   '208': 332, '209': 222, 'PLATINUM': 160, 'R2': 14, 'R1': 14, 'L1': 14, 'L2': 14, 'L3': 14
 };
 
+const GAMES = [
+  { id: '6a5cc8376d616cab8463a42c', name: 'טוטו 1' }
+];
+
 const PRICE_GROUPS = [
   { label: '101 · 102 · 103R', sections: ['101','102','103R'] },
   { label: '103L · 104 · 105', sections: ['103L','104','105C','105L','105R'] },
@@ -326,6 +338,7 @@ const GROUPS = [
   {id:'lower', label:'יציע תחתון'},
   {id:'upper', label:'יציע עליון'},
   {id:'vip', label:'VIP'},
+  {id:'games', label:'משחקים'},
 ];
 
 function classifyGroup(section){
@@ -413,6 +426,20 @@ function renderGroupTabs(grouped, sections){
   const el = document.getElementById('groupTabs');
   el.innerHTML = '';
   for(const g of GROUPS){
+    // Games group is always shown
+    if(g.id === 'games'){
+      const tab = document.createElement('div');
+      tab.className = 'group-tab' + (g.id===activeGroup ? ' active':'');
+      const totalSold = 0; // loaded dynamically
+      tab.innerHTML = `<span>${g.label}</span><span class="count">${GAMES.length} משחקים</span>`;
+      tab.addEventListener('click', ()=>{
+        activeGroup = 'games';
+        activeSection = GAMES[0]?.id;
+        render();
+      });
+      el.appendChild(tab);
+      continue;
+    }
     const groupSections = sections.filter(s=>classifyGroup(s)===g.id);
     if(groupSections.length===0) continue;
     let groupTickets = [];
@@ -713,6 +740,54 @@ function refreshSeatMap(section, container){
     `<span>אחוז חידוש: <b>${renewPct}%</b></span>`;
 }
 
+function renderGamePanel(gameId){
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="loading">טוען נתוני משחק...</div>';
+
+  onSnapshot(doc(db,'games',gameId), (snap)=>{
+    main.innerHTML = '';
+    const data = snap.exists() ? snap.data() : {};
+    const game = GAMES.find(g=>g.id===gameId);
+
+    const panel = document.createElement('div');
+    panel.className = 'game-panel';
+
+    const head = document.createElement('div');
+    head.className = 'game-panel-head';
+    head.textContent = game?.name || gameId;
+    panel.appendChild(head);
+
+    const stats = document.createElement('div');
+    stats.className = 'game-stats';
+
+    // Get all price levels
+    const priceLevels = Object.entries(data)
+      .filter(([k]) => k.startsWith('price_'))
+      .map(([k,v]) => ({ price: parseInt(k.replace('price_','')), count: v }))
+      .sort((a,b) => a.price - b.price);
+
+    if(priceLevels.length === 0){
+      stats.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">אין נתונים עדיין</div>';
+    } else {
+      priceLevels.forEach(({price, count})=>{
+        const row = document.createElement('div');
+        row.className = 'game-row';
+        row.innerHTML = `<span class="price-label">₪${price} לכרטיס</span><span class="price-val">${count} כרטיסים · ₪${(price*count).toLocaleString()}</span>`;
+        stats.appendChild(row);
+      });
+      const totalRow = document.createElement('div');
+      totalRow.className = 'game-row';
+      const totalSold = data.totalSold || 0;
+      const totalRevenue = data.totalRevenue || 0;
+      totalRow.innerHTML = `<span>סה"כ</span><span style="color:var(--accent2)">${totalSold} כרטיסים · ₪${totalRevenue.toLocaleString()}</span>`;
+      stats.appendChild(totalRow);
+    }
+
+    panel.appendChild(stats);
+    main.appendChild(panel);
+  });
+}
+
 function render(){
   const grouped = groupBySection(TICKETS);
   for(const s of Object.keys(SEATS)){
@@ -721,8 +796,31 @@ function render(){
   const sections = Array.from(grouped.keys()).sort(naturalSectionSort);
 
   if(!activeGroup){
-    activeGroup = GROUPS.find(g=>sections.some(s=>classifyGroup(s)===g.id))?.id;
+    activeGroup = GROUPS.find(g=>sections.some(s=>classifyGroup(s)===g.id))?.id || 'lower';
   }
+
+  // Handle games group separately
+  if(activeGroup === 'games'){
+    renderGroupTabs(grouped, sections);
+    document.getElementById('tabs').innerHTML = '';
+    // Show game sub-tabs
+    const tabsEl = document.getElementById('tabs');
+    GAMES.forEach(game=>{
+      const tab = document.createElement('div');
+      tab.className = 'tab' + (activeSection===game.id?' active':'');
+      tab.innerHTML = `<span>${escapeHtml(game.name)}</span>`;
+      tab.addEventListener('click', ()=>{ activeSection=game.id; render(); });
+      tabsEl.appendChild(tab);
+    });
+    if(!activeSection || !GAMES.find(g=>g.id===activeSection)){
+      activeSection = GAMES[0]?.id;
+    }
+    renderPriceGroups(grouped);
+    if(activeSection) renderGamePanel(activeSection);
+    updateStatsBar();
+    return;
+  }
+
   const groupSections = sections.filter(s=>classifyGroup(s)===activeGroup);
   if(!activeSection || !groupSections.includes(activeSection)){
     activeSection = groupSections[0];
@@ -1022,6 +1120,40 @@ document.getElementById('priceModal').addEventListener('click', e=>{
   if(e.target === e.currentTarget) e.currentTarget.style.display = 'none';
 });
 
+document.getElementById('gamesBtn').addEventListener('click', async ()=>{
+  const modal = document.getElementById('gamesModal');
+  const body = document.getElementById('gamesModalBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">טוען...</div>';
+  try {
+    body.innerHTML = '';
+    for(const game of GAMES){
+      const snap = await getDoc(doc(db,'games',game.id));
+      const data = snap.exists() ? snap.data() : {};
+      const priceLevels = Object.entries(data)
+        .filter(([k]) => k.startsWith('price_'))
+        .map(([k,v]) => ({ price: parseInt(k.replace('price_','')), count: v }))
+        .sort((a,b) => a.price - b.price);
+      const totalSold = data.totalSold || 0;
+      const totalRevenue = data.totalRevenue || 0;
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px';
+      card.innerHTML = `<div style="font-size:14px;font-weight:600;margin-bottom:10px">${escapeHtml(game.name)}</div>` +
+        (priceLevels.length === 0 ? '<div style="color:var(--muted);font-size:13px">אין נתונים עדיין</div>' :
+          priceLevels.map(({price,count})=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f"><span style="color:var(--muted)">₪${price} לכרטיס</span><span>${count} כרטיסים · ₪${(price*count).toLocaleString()}</span></div>`).join('') +
+          `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0"><span>סה"כ</span><span style="color:var(--accent2)">${totalSold} כרטיסים · ₪${totalRevenue.toLocaleString()}</span></div>`
+        );
+      body.appendChild(card);
+    }
+  } catch(e){ body.innerHTML = `<div style="color:var(--danger)">שגיאה: ${e.message}</div>`; }
+});
+document.getElementById('gamesModalClose').addEventListener('click', ()=>{
+  document.getElementById('gamesModal').style.display = 'none';
+});
+document.getElementById('gamesModal').addEventListener('click', e=>{
+  if(e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+});
+
 document.getElementById('taskBtn').addEventListener('click', ()=>{
   document.getElementById('taskModal').classList.add('open');
   loadTasks();
@@ -1102,6 +1234,18 @@ startLiveSync();
   <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:90vw;max-height:90vh;overflow:hidden;position:relative;">
     <button onclick="document.getElementById('priceModal').style.display='none'" style="position:absolute;top:10px;left:10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;z-index:1;">✕</button>
     <img src="https://amitkleinman.github.io/fcmn-renewals/prices.jpeg" style="display:block;max-width:90vw;max-height:90vh;object-fit:contain;">
+  </div>
+</div>
+
+<div id="gamesModal" style="display:none;position:fixed;inset:0;background:#000a;z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;width:90%;max-width:500px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 20px;background:var(--panel2);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
+      <span style="font-size:15px;font-weight:600">⚽ משחקים</span>
+      <button id="gamesModalClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="overflow-y:auto;padding:16px 20px" id="gamesModalBody">
+      <div style="color:var(--muted);text-align:center;padding:20px">טוען...</div>
+    </div>
   </div>
 </div>
 
