@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -789,17 +791,49 @@ function renderGamePanel(gameId){
       if(ordersList.length === 0){
         orderListEl.textContent = 'אין הזמנות';
       } else {
+        const hdr2=document.createElement('div');
+        hdr2.style.cssText='display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid #2b3040;font-weight:600';
+        hdr2.innerHTML='<span>שם</span><span>יציע</span>';
+        orderListEl.appendChild(hdr2);
         ordersList.forEach((item,i)=>{
           const name = typeof item === 'object' ? item.name : item;
           const cat = typeof item === 'object' ? item.category : '';
+          let yitzia='';
+          if(cat){const c=String(cat).trim();yitzia=c.charAt(0)==='1'?'מערבי תחתון':c.charAt(0)==='2'?'מערבי עליון':'כבוד';}
           const d=document.createElement('div');
           d.style.cssText='padding:4px 0;border-bottom:1px solid #20242f;display:flex;justify-content:space-between';
-          d.innerHTML=`<span>${i+1}. ${escapeHtml(name)}</span>${cat?`<span style="color:var(--muted);font-size:11px">${escapeHtml(cat)}</span>`:''}`;
+          d.innerHTML=`<span>${i+1}. ${escapeHtml(name)}</span><span style="color:var(--muted);font-size:11px">${escapeHtml(yitzia)}</span>`;
           orderListEl.appendChild(d);
+        });
         });
       }
       stats.appendChild(orderListEl);
-      ordersRow.addEventListener('click',()=>{ orderListEl.style.display=orderListEl.style.display==='none'?'block':'none'; });
+
+      const exportBtn2 = document.createElement('button');
+      exportBtn2.style.cssText = 'margin-top:6px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:none';
+      exportBtn2.textContent = '📥 ייצא הזמנות לאקסל';
+      stats.appendChild(exportBtn2);
+
+      ordersRow.addEventListener('click',()=>{
+        const open = orderListEl.style.display==='none';
+        orderListEl.style.display = open?'block':'none';
+        exportBtn2.style.display = open?'inline-block':'none';
+      });
+
+      exportBtn2.addEventListener('click', ()=>{
+        const rows=[['#','שם','יציע']];
+        ordersList.forEach((item,i)=>{
+          const name=typeof item==='object'?item.name:item;
+          const cat=typeof item==='object'?item.category:'';
+          let yitzia='';
+          if(cat){const c=String(cat).trim();yitzia=c.charAt(0)==='1'?'מערבי תחתון':c.charAt(0)==='2'?'מערבי עליון':'כבוד';}
+          rows.push([i+1,name,yitzia]);
+        });
+        const ws=XLSX.utils.aoa_to_sheet(rows);
+        const wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,'הזמנות');
+        XLSX.writeFile(wb,`הזמנות_${game?.name||gameId}.xlsx`);
+      });
 
       // Total row
       const totalRow = document.createElement('div');
@@ -1191,10 +1225,56 @@ async function loadGameModal(gameId){
 
     const listEl=document.createElement('div');
     listEl.style.cssText='display:none;background:var(--bg);border-radius:6px;padding:8px;margin:4px 0;font-size:12px;max-height:180px;overflow-y:auto';
+    // Helper to translate category to יציע label
+    function catToYitzia(cat){
+      if(!cat) return '';
+      const c = String(cat).trim();
+      if(c.charAt(0)==='1') return 'מערבי תחתון';
+      if(c.charAt(0)==='2') return 'מערבי עליון';
+      return 'כבוד';
+    }
     if(ordersList.length===0){ listEl.innerHTML='<div style="color:var(--muted)">אין הזמנות</div>'; }
-    else { ordersList.forEach((item,i)=>{ const name=typeof item==='object'?item.name:item; const cat=typeof item==='object'?item.category:''; const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f;display:flex;justify-content:space-between'; d.innerHTML=`<span>${i+1}. ${escapeHtml(name)}</span>${cat?`<span style="color:var(--muted)">${escapeHtml(cat)}</span>`:''}  `; listEl.appendChild(d); }); }
+    else {
+      // Header row
+      const hdr=document.createElement('div');
+      hdr.style.cssText='display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid #2b3040;font-weight:600';
+      hdr.innerHTML='<span>שם</span><span>יציע</span>';
+      listEl.appendChild(hdr);
+      ordersList.forEach((item,i)=>{ const name=typeof item==='object'?item.name:item; const cat=typeof item==='object'?item.category:''; const yitzia=catToYitzia(cat); const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f;display:flex;justify-content:space-between'; d.innerHTML=`<span>${i+1}. ${escapeHtml(name)}</span><span style="color:var(--muted);font-size:11px">${escapeHtml(yitzia)}</span>`; listEl.appendChild(d); });
+    }
     wrap.appendChild(listEl);
-    ordersRow.addEventListener('click',()=>{ listEl.style.display=listEl.style.display==='none'?'block':'none'; });
+
+    // Export button for הזמנות
+    if(ordersList.length > 0){
+      const exportBtn = document.createElement('button');
+      exportBtn.style.cssText = 'margin-top:6px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:none';
+      exportBtn.textContent = '📥 ייצא הזמנות לאקסל';
+      wrap.appendChild(exportBtn);
+
+      ordersRow.addEventListener('click',()=>{
+        const open = listEl.style.display==='none';
+        listEl.style.display = open ? 'block' : 'none';
+        exportBtn.style.display = open ? 'inline-block' : 'none';
+      });
+
+      exportBtn.addEventListener('click', ()=>{
+        const gameName = document.getElementById('gamesModalTitle').textContent.replace('⚽ ','');
+        const rows = [['#','שם','יציע']];
+        ordersList.forEach((item,i)=>{
+          const name = typeof item==='object'?item.name:item;
+          const cat = typeof item==='object'?item.category:'';
+          let yitzia='';
+          if(cat){const c=String(cat).trim();yitzia=c.charAt(0)==='1'?'מערבי תחתון':c.charAt(0)==='2'?'מערבי עליון':'כבוד';}
+          rows.push([i+1, name, yitzia]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'הזמנות');
+        XLSX.writeFile(wb, `הזמנות_${gameName}.xlsx`);
+      });
+    } else {
+      ordersRow.addEventListener('click',()=>{ listEl.style.display=listEl.style.display==='none'?'block':'none'; });
+    }
 
     const totalRow=document.createElement('div');
     totalRow.style.cssText='display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:10px 0 0';
