@@ -190,7 +190,7 @@ processBtn.addEventListener('click', async ()=>{
       else if(firstChar==='2'){ westernUpper++; westernUpperRevenue+=priceVal; }
       else{ honor++; honorRevenue+=priceVal; }
       total++;
-      if(!hasPrice&&name) ordersList.push(name);
+      if(!hasPrice&&name) ordersList.push({name, category: cat});
     }
     const totalRevenue=westernLowerRevenue+westernUpperRevenue+honorRevenue;
     addLogG(`מערבי תחתון: ${westernLower} (₪${westernLowerRevenue.toLocaleString()}) | מערבי עליון: ${westernUpper} (₪${westernUpperRevenue.toLocaleString()}) | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total} | ₪${totalRevenue.toLocaleString()}`);
