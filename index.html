@@ -237,6 +237,7 @@
       <button id="gamesBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">⚽ משחקים</button>
       <a href="upload.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📥 העלאת קובץ</a>
       <a href="tasks.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">📋 ניהול משימות</a>
+      <a href="games.html" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; text-decoration:none; background:var(--panel2)">⚽ ניהול משחקים</a>
     </div>
   </div>
   <div class="controls">
@@ -760,18 +761,18 @@ function renderGamePanel(gameId){
     stats.className = 'game-stats';
 
     const rows = [
-      { label: '🏟 מערבי תחתון', val: data.westernLower || 0 },
-      { label: '🏟 מערבי עליון', val: data.westernUpper || 0 },
-      { label: '⭐ כבוד', val: data.honor || 0 },
+      { label: '🏟 מערבי תחתון', val: data.westernLower || 0, rev: data.westernLowerRevenue || 0 },
+      { label: '🏟 מערבי עליון', val: data.westernUpper || 0, rev: data.westernUpperRevenue || 0 },
+      { label: '⭐ כבוד', val: data.honor || 0, rev: data.honorRevenue || 0 },
     ];
 
     if(!snap.exists() || !data.total){
       stats.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">אין נתונים עדיין — העלה קובץ</div>';
     } else {
-      rows.forEach(({label, val})=>{
+      rows.forEach(({label, val, rev})=>{
         const row = document.createElement('div');
         row.className = 'game-row';
-        row.innerHTML = `<span class="price-label">${label}</span><span class="price-val">${val} כרטיסים</span>`;
+        row.innerHTML = `<span class="price-label">${label}</span><span class="price-val">${val} כרטיסים${rev>0?` · ₪${rev.toLocaleString()}`:''}  </span>`;
         stats.appendChild(row);
       });
 
@@ -780,18 +781,24 @@ function renderGamePanel(gameId){
       const ordersList = data.ordersList || [];
       const ordersRow = document.createElement('div');
       ordersRow.className = 'game-row';
-      ordersRow.innerHTML = `<span class="price-label">📋 הזמנות</span><span class="price-val" style="cursor:pointer;text-decoration:underline dotted;color:var(--accent2)" id="ordersToggle">${ordersCount} כרטיסים ▾</span>`;
+      ordersRow.innerHTML = `<span class="price-label">📋 הזמנות</span><span class="price-val" style="cursor:pointer;text-decoration:underline dotted;color:var(--accent2)">${ordersCount} כרטיסים ▾</span>`;
       stats.appendChild(ordersRow);
 
       const orderListEl = document.createElement('div');
       orderListEl.style.cssText = 'display:none;background:var(--bg);border-radius:8px;padding:10px;margin-top:4px;font-size:12.5px;color:var(--muted);max-height:200px;overflow-y:auto';
-      ordersList.forEach((name,i)=>{ const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f'; d.textContent=`${i+1}. ${name}`; orderListEl.appendChild(d); });
+      if(ordersList.length === 0){
+        orderListEl.textContent = 'אין הזמנות';
+      } else {
+        ordersList.forEach((name,i)=>{ const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f'; d.textContent=`${i+1}. ${name}`; orderListEl.appendChild(d); });
+      }
       stats.appendChild(orderListEl);
-      ordersRow.querySelector('#ordersToggle').addEventListener('click',()=>{ orderListEl.style.display=orderListEl.style.display==='none'?'block':'none'; });
+      ordersRow.addEventListener('click',()=>{ orderListEl.style.display=orderListEl.style.display==='none'?'block':'none'; });
 
+      // Total row
       const totalRow = document.createElement('div');
       totalRow.className = 'game-row';
-      totalRow.innerHTML = `<span>סה"כ</span><span style="color:var(--accent2);font-size:16px">${data.total || 0} כרטיסים</span>`;
+      const totalRevenue = data.totalRevenue || 0;
+      totalRow.innerHTML = `<span>סה"כ</span><span style="color:var(--accent2);font-size:15px">${data.total||0} כרטיסים${totalRevenue>0?` · ₪${totalRevenue.toLocaleString()}`:''}  </span>`;
       stats.appendChild(totalRow);
     }
 
