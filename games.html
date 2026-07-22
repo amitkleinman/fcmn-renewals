@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ניהול משחקים - FCMN</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f2330;--border:#2b3040;--text:#e8eaf0;--muted:#9aa3b5;--accent:#f5c518;--accent2:#2dd4a3;--danger:#ef5b5b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;min-height:100vh;padding:20px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+  h1{font-size:20px;display:flex;align-items:center;gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .back-link{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--border);padding:6px 12px;border-radius:7px}
+  .back-link:hover{color:var(--text)}
+  .games-grid{display:flex;flex-direction:column;gap:12px;max-width:700px}
+  .game-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .game-card-head{padding:14px 20px;background:var(--panel2);display:flex;justify-content:space-between;align-items:center}
+  .game-card-head .game-name{font-size:15px;font-weight:600}
+  .game-card-head .game-actions{display:flex;gap:8px}
+  .btn-edit{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+  .btn-edit:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-delete{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+  .btn-delete:hover{border-color:var(--danger);color:var(--danger)}
+  .game-card-body{padding:14px 20px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .game-stat span{color:var(--text);font-weight:600}
+  .add-game-form{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:700px;margin-bottom:20px}
+  .add-game-form h3{font-size:14px;font-weight:600;margin-bottom:14px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .form-field{display:flex;flex-direction:column;gap:4px}
+  .form-field label{font-size:11.5px;color:var(--muted)}
+  .form-field input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px}
+  .form-field input:full-width{grid-column:1/-1}
+  .btn-add{background:var(--accent);color:#14161c;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+  .empty{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+  .modal-overlay{display:none;position:fixed;inset:0;background:#000a;z-index:200;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:90%;max-width:480px;padding:20px}
+  .modal h3{font-size:15px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot"></span> ניהול משחקים</h1>
+  <a href="index.html" class="back-link">← חזור לטרקר</a>
+</header>
+
+<div class="add-game-form" id="addForm">
+  <h3>+ הוסף משחק חדש</h3>
+  <div class="form-grid">
+    <div class="form-field">
+      <label>שם המשחק</label>
+      <input type="text" id="newGameName" placeholder="טוטו 2">
+    </div>
+    <div class="form-field">
+      <label>Event ID (מ-Vivenu)</label>
+      <input type="text" id="newGameEventId" placeholder="6a5cc837...">
+    </div>
+    <div class="form-field">
+      <label>תאריך</label>
+      <input type="date" id="newGameDate">
+    </div>
+    <div class="form-field">
+      <label>יריב</label>
+      <input type="text" id="newGameOpponent" placeholder="שם הקבוצה היריבה">
+    </div>
+  </div>
+  <button class="btn-add" id="addGameBtn">+ הוסף משחק</button>
+  <span id="addStatus" style="font-size:12px;color:var(--muted);margin-right:12px"></span>
+</div>
+
+<div class="games-grid" id="gamesList"><div class="empty">טוען...</div></div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>✏️ עריכת משחק</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>שם המשחק</label><input type="text" id="editName"></div>
+      <div class="form-field"><label>Event ID</label><input type="text" id="editEventId" disabled style="opacity:0.5"></div>
+      <div class="form-field"><label>תאריך</label><input type="date" id="editDate"></div>
+      <div class="form-field"><label>יריב</label><input type="text" id="editOpponent"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-add" id="saveEditBtn">שמור</button>
+      <button class="btn-delete" id="cancelEditBtn">ביטול</button>
+    </div>
+    <input type="hidden" id="editGameId">
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",
+  authDomain: "fcmn-renewals-26-27.firebaseapp.com",
+  projectId: "fcmn-renewals-26-27",
+  storageBucket: "fcmn-renewals-26-27.firebasestorage.app",
+  messagingSenderId: "681981226078",
+  appId: "1:681981226078:web:9db5a9aedee0c56193d8cf"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const gamesConfigCol = collection(db, 'gamesConfig');
+
+async function loadGames(){
+  const list = document.getElementById('gamesList');
+  const snap = await getDocs(gamesConfigCol);
+  if(snap.empty){ list.innerHTML = '<div class="empty">אין משחקים עדיין — הוסף משחק למעלה</div>'; return; }
+  list.innerHTML = '';
+
+  const games = [];
+  snap.forEach(d => games.push({id: d.id, ...d.data()}));
+  games.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  for(const game of games){
+    // Load stats
+    const statsSnap = await getDoc(doc(db,'games',game.eventId||game.id));
+    const stats = statsSnap.exists() ? statsSnap.data() : {};
+
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.innerHTML = `
+      <div class="game-card-head">
+        <div>
+          <div class="game-name">${escHtml(game.name||'ללא שם')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${game.date||''} ${game.opponent?'· נגד '+escHtml(game.opponent):''}</div>
+        </div>
+        <div class="game-actions">
+          <button class="btn-edit" data-id="${game.id}">✏️ עריכה</button>
+          <button class="btn-delete" data-id="${game.id}">🗑 מחק</button>
+        </div>
+      </div>
+      <div class="game-card-body">
+        <div class="game-stat">מערבי תחתון: <span>${stats.westernLower||0}</span></div>
+        <div class="game-stat">מערבי עליון: <span>${stats.westernUpper||0}</span></div>
+        <div class="game-stat">כבוד: <span>${stats.honor||0}</span></div>
+        <div class="game-stat">הזמנות: <span>${stats.ordersCount||0}</span></div>
+        <div class="game-stat">סה"כ: <span>${stats.total||0}</span></div>
+        ${stats.totalRevenue?`<div class="game-stat">הכנסות: <span style="color:var(--accent2)">₪${stats.totalRevenue.toLocaleString()}</span></div>`:''}
+        <div class="game-stat">Event ID: <span style="font-size:11px;font-family:monospace">${game.eventId||game.id}</span></div>
+      </div>`;
+
+    card.querySelector('.btn-edit').addEventListener('click', ()=>{
+      document.getElementById('editGameId').value = game.id;
+      document.getElementById('editName').value = game.name||'';
+      document.getElementById('editEventId').value = game.eventId||game.id;
+      document.getElementById('editDate').value = game.date||'';
+      document.getElementById('editOpponent').value = game.opponent||'';
+      document.getElementById('editModal').classList.add('open');
+    });
+
+    card.querySelector('.btn-delete').addEventListener('click', async ()=>{
+      if(!confirm(`למחוק את ${game.name}?`)) return;
+      await deleteDoc(doc(db,'gamesConfig',game.id));
+      await loadGames();
+    });
+
+    list.appendChild(card);
+  }
+}
+
+function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.getElementById('addGameBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newGameName').value.trim();
+  const eventId = document.getElementById('newGameEventId').value.trim();
+  const date = document.getElementById('newGameDate').value;
+  const opponent = document.getElementById('newGameOpponent').value.trim();
+  const status = document.getElementById('addStatus');
+  if(!name||!eventId){ status.textContent='יש למלא שם ו-Event ID'; return; }
+  status.textContent = 'שומר...';
+  await setDoc(doc(db,'gamesConfig',eventId), {name, eventId, date, opponent, createdAt: new Date().toISOString()});
+  document.getElementById('newGameName').value='';
+  document.getElementById('newGameEventId').value='';
+  document.getElementById('newGameDate').value='';
+  document.getElementById('newGameOpponent').value='';
+  status.textContent='✓ נשמר';
+  setTimeout(()=>status.textContent='', 2000);
+  await loadGames();
+});
+
+document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
+  const id = document.getElementById('editGameId').value;
+  await setDoc(doc(db,'gamesConfig',id), {
+    name: document.getElementById('editName').value.trim(),
+    eventId: document.getElementById('editEventId').value.trim(),
+    date: document.getElementById('editDate').value,
+    opponent: document.getElementById('editOpponent').value.trim(),
+    updatedAt: new Date().toISOString()
+  }, {merge:true});
+  document.getElementById('editModal').classList.remove('open');
+  await loadGames();
+});
+
+document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
+  document.getElementById('editModal').classList.remove('open');
+});
+document.getElementById('editModal').addEventListener('click', e=>{
+  if(e.target===e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+loadGames();
+</script>
+</body>
+</html>
