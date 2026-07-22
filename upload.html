@@ -242,9 +242,10 @@ processBtn.addEventListener('click', async ()=>{
     const name = String(row['name']||'');
     const ticketName = String(row['ticketName']||row['ticket_name']||'');
     const salesChannel = String(row['salesChannelId']||row['sales_channel_id']||'');
+    const origin = String(row['origin']||'');
 
     // Skip transfers - season ticket moved to another person
-    if(salesChannel.toLowerCase().includes('transfer')) continue;
+    if(origin.toLowerCase() === 'transfer' || salesChannel.toLowerCase().includes('transfer')) continue;
 
     totalRevenue += price;
 
