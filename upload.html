@@ -92,7 +92,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.2 · 22/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.3 · 22/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -177,8 +177,8 @@ processBtn.addEventListener('click', async ()=>{
     logEl.style.display = 'block'; logEl.innerHTML = '';
     function addLogG(msg,cls=''){ const d=document.createElement('div'); d.className='log-line '+cls; d.textContent=msg; logEl.appendChild(d); }
     addLogG('מעבד קובץ משחק...','head');
-    let westernLower=0,westernUpper=0,honor=0,total=0;
-    let westernLowerRevenue=0,westernUpperRevenue=0,honorRevenue=0;
+    let westernLower=0,westernUpper=0,honor=0,mongash=0,total=0;
+    let westernLowerRevenue=0,westernUpperRevenue=0,honorRevenue=0,mongashRevenue=0;
     const ordersList=[];
     for(const row of parsedData){
       const cat=String(row['category']||row['categoryName']||'').trim();
@@ -191,15 +191,16 @@ processBtn.addEventListener('click', async ()=>{
       const tName = String(row['ticketName']||'');
       if(origin === 'transfer' || tName.includes('מנוי עונתי')) continue; // skip transfers
       const firstChar=cat.charAt(0);
-      if(firstChar==='1'){ westernLower++; westernLowerRevenue+=priceVal; }
+      if(cat.includes('מונגש')){ mongash++; mongashRevenue+=priceVal; }
+      else if(firstChar==='1'){ westernLower++; westernLowerRevenue+=priceVal; }
       else if(firstChar==='2'){ westernUpper++; westernUpperRevenue+=priceVal; }
       else{ honor++; honorRevenue+=priceVal; }
       total++;
       if(!hasPrice&&name) ordersList.push({name, category: cat});
     }
-    const totalRevenue=westernLowerRevenue+westernUpperRevenue+honorRevenue;
-    addLogG(`מערבי תחתון: ${westernLower} (₪${westernLowerRevenue.toLocaleString()}) | מערבי עליון: ${westernUpper} (₪${westernUpperRevenue.toLocaleString()}) | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total} | ₪${totalRevenue.toLocaleString()}`);
-    await setDoc(doc(db,'games',gameId),{westernLower,westernUpper,honor,total,ordersCount:ordersList.length,ordersList,westernLowerRevenue,westernUpperRevenue,honorRevenue,totalRevenue,updatedAt:new Date().toISOString()});
+    const totalRevenue=westernLowerRevenue+westernUpperRevenue+honorRevenue+mongashRevenue;
+    addLogG(`מונגש: ${mongash} | מערבי תחתון: ${westernLower} (₪${westernLowerRevenue.toLocaleString()}) | מערבי עליון: ${westernUpper} (₪${westernUpperRevenue.toLocaleString()}) | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total} | ₪${totalRevenue.toLocaleString()}`);
+    await setDoc(doc(db,'games',gameId),{westernLower,westernUpper,honor,mongash,total,ordersCount:ordersList.length,ordersList,westernLowerRevenue,westernUpperRevenue,honorRevenue,mongashRevenue,totalRevenue,updatedAt:new Date().toISOString()});
     addLogG('✓ נשמר בהצלחה','ok');
     processBtn.textContent='הושלם ✓';
     trackerLink.style.display='inline-block';
