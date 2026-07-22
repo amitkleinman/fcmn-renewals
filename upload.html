@@ -177,21 +177,24 @@ processBtn.addEventListener('click', async ()=>{
     function addLogG(msg,cls=''){ const d=document.createElement('div'); d.className='log-line '+cls; d.textContent=msg; logEl.appendChild(d); }
     addLogG('מעבד קובץ משחק...','head');
     let westernLower=0,westernUpper=0,honor=0,total=0;
+    let westernLowerRevenue=0,westernUpperRevenue=0,honorRevenue=0;
     const ordersList=[];
     for(const row of parsedData){
       const cat=String(row['category']||row['categoryName']||'').trim();
       const price=row['price'];
       const name=String(row['name']||'').trim();
       const hasPrice=price!==null&&price!==undefined&&price!==''&&!isNaN(Number(price))&&Number(price)>0;
+      const priceVal=hasPrice?Number(price):0;
       const firstChar=cat.charAt(0);
-      if(firstChar==='1') westernLower++;
-      else if(firstChar==='2') westernUpper++;
-      else honor++;
+      if(firstChar==='1'){ westernLower++; westernLowerRevenue+=priceVal; }
+      else if(firstChar==='2'){ westernUpper++; westernUpperRevenue+=priceVal; }
+      else{ honor++; honorRevenue+=priceVal; }
       total++;
       if(!hasPrice&&name) ordersList.push(name);
     }
-    addLogG(`מערבי תחתון: ${westernLower} | מערבי עליון: ${westernUpper} | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total}`);
-    await setDoc(doc(db,'games',gameId),{westernLower,westernUpper,honor,total,ordersCount:ordersList.length,ordersList,updatedAt:new Date().toISOString()});
+    const totalRevenue=westernLowerRevenue+westernUpperRevenue+honorRevenue;
+    addLogG(`מערבי תחתון: ${westernLower} (₪${westernLowerRevenue.toLocaleString()}) | מערבי עליון: ${westernUpper} (₪${westernUpperRevenue.toLocaleString()}) | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total} | ₪${totalRevenue.toLocaleString()}`);
+    await setDoc(doc(db,'games',gameId),{westernLower,westernUpper,honor,total,ordersCount:ordersList.length,ordersList,westernLowerRevenue,westernUpperRevenue,honorRevenue,totalRevenue,updatedAt:new Date().toISOString()});
     addLogG('✓ נשמר בהצלחה','ok');
     processBtn.textContent='הושלם ✓';
     trackerLink.style.display='inline-block';
