@@ -92,7 +92,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.3 · 22/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.4 · 22/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -192,7 +192,7 @@ processBtn.addEventListener('click', async ()=>{
       if(origin === 'transfer' || tName.includes('מנוי עונתי')) continue; // skip transfers
       const firstChar=cat.charAt(0);
       if(cat.includes('מונגש')){ mongash++; mongashRevenue+=priceVal; }
-      else if(firstChar==='1'){ westernLower++; westernLowerRevenue+=priceVal; }
+      else if(firstChar==='1'||cat.includes('105R')||cat.includes('105L')||cat.includes('105C')){ westernLower++; westernLowerRevenue+=priceVal; }
       else if(firstChar==='2'){ westernUpper++; westernUpperRevenue+=priceVal; }
       else{ honor++; honorRevenue+=priceVal; }
       total++;
