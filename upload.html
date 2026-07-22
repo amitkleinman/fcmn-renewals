@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -185,6 +187,7 @@ processBtn.addEventListener('click', async ()=>{
       const name=String(row['name']||'').trim();
       const hasPrice=price!==null&&price!==undefined&&price!==''&&!isNaN(Number(price))&&Number(price)>0;
       const priceVal=hasPrice?Number(price):0;
+      if(cat.includes('מזרחי')) continue; // skip away team
       const firstChar=cat.charAt(0);
       if(firstChar==='1'){ westernLower++; westernLowerRevenue+=priceVal; }
       else if(firstChar==='2'){ westernUpper++; westernUpperRevenue+=priceVal; }
