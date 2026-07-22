@@ -240,6 +240,12 @@ processBtn.addEventListener('click', async ()=>{
     const s = Number(row['seat.seat']);
     const price = Number(row['price']||0);
     const name = String(row['name']||'');
+    const ticketName = String(row['ticketName']||row['ticket_name']||'');
+    const salesChannel = String(row['salesChannelId']||row['sales_channel_id']||'');
+
+    // Skip transfers - season ticket moved to another person
+    if(salesChannel.toLowerCase().includes('transfer')) continue;
+
     totalRevenue += price;
 
     if(!PRICE_MAP[section]){
