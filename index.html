@@ -789,7 +789,14 @@ function renderGamePanel(gameId){
       if(ordersList.length === 0){
         orderListEl.textContent = 'אין הזמנות';
       } else {
-        ordersList.forEach((name,i)=>{ const d=document.createElement('div'); d.style.cssText='padding:3px 0;border-bottom:1px solid #20242f'; d.textContent=`${i+1}. ${name}`; orderListEl.appendChild(d); });
+        ordersList.forEach((item,i)=>{
+          const name = typeof item === 'object' ? item.name : item;
+          const cat = typeof item === 'object' ? item.category : '';
+          const d=document.createElement('div');
+          d.style.cssText='padding:4px 0;border-bottom:1px solid #20242f;display:flex;justify-content:space-between';
+          d.innerHTML=`<span>${i+1}. ${escapeHtml(name)}</span>${cat?`<span style="color:var(--muted);font-size:11px">${escapeHtml(cat)}</span>`:''}`;
+          orderListEl.appendChild(d);
+        });
       }
       stats.appendChild(orderListEl);
       ordersRow.addEventListener('click',()=>{ orderListEl.style.display=orderListEl.style.display==='none'?'block':'none'; });
@@ -1152,17 +1159,38 @@ document.getElementById('gamesBtn').addEventListener('click', async ()=>{
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px';
       const sectionRows = [
-        {label:'🏟 מערבי תחתון',val:data.westernLower||0},
-        {label:'🏟 מערבי עליון',val:data.westernUpper||0},
-        {label:'⭐ כבוד',val:data.honor||0},
-        {label:'📋 הזמנות',val:data.ordersCount||0},
+        {label:'🏟 מערבי תחתון',val:data.westernLower||0, rev:data.westernLowerRevenue||0},
+        {label:'🏟 מערבי עליון',val:data.westernUpper||0, rev:data.westernUpperRevenue||0},
+        {label:'⭐ כבוד',val:data.honor||0, rev:data.honorRevenue||0},
       ];
+      const ordersList = data.ordersList || [];
+      const ordersCount = data.ordersCount || 0;
+      let ordersHtml = `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f;cursor:pointer" id="ordersToggle_${game.id}">
+        <span style="color:var(--muted)">📋 הזמנות</span>
+        <span style="color:var(--accent2);text-decoration:underline dotted">${ordersCount} כרטיסים ▾</span>
+      </div>
+      <div id="ordersList_${game.id}" style="display:none;background:var(--bg);border-radius:6px;padding:8px;margin-bottom:4px;font-size:12px;max-height:150px;overflow-y:auto">`;
+      if(ordersList.length === 0){
+        ordersHtml += '<div style="color:var(--muted)">אין הזמנות</div>';
+      } else {
+        ordersList.forEach((item,i)=>{
+          const name = typeof item === 'object' ? item.name : item;
+          const cat = typeof item === 'object' ? item.category : '';
+          ordersHtml += `<div style="padding:3px 0;border-bottom:1px solid #20242f;display:flex;justify-content:space-between"><span>${i+1}. ${escapeHtml(name)}</span>${cat?`<span style="color:var(--muted)">${escapeHtml(cat)}</span>`:''}  </div>`;
+        });
+      }
+      ordersHtml += '</div>';
+
       card.innerHTML = `<div style="font-size:14px;font-weight:600;margin-bottom:10px">${escapeHtml(game.name)}</div>` +
         (!data.total ? '<div style="color:var(--muted);font-size:13px">אין נתונים עדיין</div>' :
-          sectionRows.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f"><span style="color:var(--muted)">${r.label}</span><span>${r.val} כרטיסים</span></div>`).join('') +
-          `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0"><span>סה"כ</span><span style="color:var(--accent2)">${data.total||0} כרטיסים</span></div>`
+          sectionRows.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #20242f"><span style="color:var(--muted)">${r.label}</span><span>${r.val} כרטיסים${r.rev>0?` · ₪${r.rev.toLocaleString()}`:''}  </span></div>`).join('') +
+          ordersHtml +
+          `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0 0"><span>סה"כ</span><span style="color:var(--accent2)">${data.total||0} כרטיסים${data.totalRevenue>0?` · ₪${data.totalRevenue.toLocaleString()}`:''}  </span></div>`
         );
       body.appendChild(card);
+      const toggle = card.querySelector(`#ordersToggle_${game.id}`);
+      const listEl = card.querySelector(`#ordersList_${game.id}`);
+      if(toggle && listEl) toggle.addEventListener('click', ()=>{ listEl.style.display = listEl.style.display==='none'?'block':'none'; });
     }
   } catch(e){ body.innerHTML = `<div style="color:var(--danger)">שגיאה: ${e.message}</div>`; }
 });
