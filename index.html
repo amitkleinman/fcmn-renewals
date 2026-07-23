@@ -1222,9 +1222,10 @@ async function loadGameModal(gameId){
     });
 
     // הזמנות clickable
+    const trueOrdersCount = ordersList.length || ordersCount;
     const ordersRow=document.createElement('div');
     ordersRow.style.cssText='display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid #20242f;cursor:pointer';
-    ordersRow.innerHTML=`<span style="color:var(--muted)">📋 הזמנות</span><span style="color:var(--accent2);text-decoration:underline dotted">${ordersCount} כרטיסים ▾</span>`;
+    ordersRow.innerHTML=`<span style="color:var(--muted)">📋 הזמנות</span><span style="color:var(--accent2);text-decoration:underline dotted">${trueOrdersCount} כרטיסים ▾</span>`;
     wrap.appendChild(ordersRow);
 
     const listEl=document.createElement('div');
