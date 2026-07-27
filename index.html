@@ -1146,6 +1146,7 @@ let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
       // Use max of Firestore and hardcoded to prevent bad data from overriding
       liveMeta.totalNewSeason = Math.max(d.totalNewSeason ?? 0, TOTAL_NEW_SEASON);
       liveMeta.newBuyers = Math.max(d.newBuyers ?? 0, NEW_BUYERS_COUNT);
+      liveMeta.youthCount = d.youthCount ?? 0;
       liveMeta.totalRevenue = Math.max(d.totalRevenue ?? 0, TOTAL_REVENUE);
       liveMeta.lastUpdated = d.lastUpdated && d.totalNewSeason >= TOTAL_NEW_SEASON ? d.lastUpdated : LAST_UPDATED;
       liveMeta.newBuyersList = d.newBuyersList ?? [];
