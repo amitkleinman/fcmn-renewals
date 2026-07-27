@@ -93,7 +93,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.5 · 23/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.6 · 27/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -302,6 +302,7 @@ processBtn.addEventListener('click', async ()=>{
   const uniqueIds = [...new Map(matchedIds.map(id=>[id,id])).values()];
   const newBuyers = newBuyersList.length;
   const totalNewSeason = parsedData.length;
+  const youthCount = parsedData.filter(row => String(row['underShopId']||'') === '6a65e8335d3854db36844878').length;
 
   addLog(`מחודשים (לפי מחיר): ${totalRenewals} · מסומנים: ${uniqueIds.length} · חדשים: ${newBuyers} · סה"כ: ${totalNewSeason}`);
   addLog(`הכנסות ברוטו: ₪${totalRevenue.toLocaleString()}`);
@@ -330,6 +331,7 @@ processBtn.addEventListener('click', async ()=>{
   await setDoc(doc(db,'meta','stats'), {
     totalNewSeason: totalNewSeason,
     newBuyers,
+    youthCount,
     totalRevenue: totalRevenue,
     kasherCount,
     kasherRevenue,
