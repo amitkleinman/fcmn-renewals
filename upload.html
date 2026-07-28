@@ -198,10 +198,19 @@ processBtn.addEventListener('click', async ()=>{
     const currentRevenue = currentStats.totalRevenue || 0;
     const correctedRevenue = currentRevenue - totalDiscount;
 
+    const youthList = youthRows.map(row => ({
+      name: String(row['name']||'').trim(),
+      email: String(row['email']||'').trim(),
+      realPrice: Number(row['realPrice']||0),
+      discountSum: Number(row['discountSum']||0),
+      ticketCount: Number(row['ticketCount']||1)
+    }));
+
     await updateDoc(doc(db,'meta','stats'), {
       totalRevenue: correctedRevenue,
       youthCount: youthTicketCount,
-      youthDiscountSum: totalDiscount
+      youthDiscountSum: totalDiscount,
+      youthList
     });
 
     addLogT(`✓ הכנסות מתוקנות: ₪${correctedRevenue.toLocaleString()} (קוזז ₪${totalDiscount.toLocaleString()})`, 'ok');
