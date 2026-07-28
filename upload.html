@@ -60,6 +60,7 @@
     <button class="upload-type-btn active" data-type="season" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--accent);background:var(--panel);color:var(--text);cursor:pointer;font-size:13px;font-weight:600">🎫 מנויים</button>
     <button class="upload-type-btn" data-type="game" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px">⚽ משחק</button>
     <button class="upload-type-btn" data-type="parking" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px">🅿️ חניה</button>
+    <button class="upload-type-btn" data-type="transactions" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px">💳 עסקאות</button>
   </div>
   <div id="gameSelector" style="display:none;margin-top:10px">
     <label style="font-size:12px;color:var(--muted)">בחר משחק</label>
@@ -93,12 +94,12 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.6 · 27/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.7 · 28/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc
+  getFirestore, doc, setDoc, getDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -171,6 +172,43 @@ processBtn.addEventListener('click', async ()=>{
   processBtn.disabled = true;
   processBtn.textContent = 'מעבד...';
   const kasherCount = parseInt(document.getElementById('kasherCount').value) || 0;
+
+  // Transactions upload (youth discount correction)
+  if(uploadType === 'transactions'){
+    logEl.style.display = 'block'; logEl.innerHTML = '';
+    function addLogT(msg,cls=''){ const d=document.createElement('div'); d.className='log-line '+cls; d.textContent=msg; logEl.appendChild(d); }
+    addLogT('מעבד קובץ עסקאות...','head');
+
+    const youthRows = parsedData.filter(row => String(row['underShopInfo.name']||'').includes('נוער'));
+    addLogT(`נמצאו ${youthRows.length} עסקאות מחלקת נוער`);
+
+    let totalDiscount = 0;
+    let youthTicketCount = 0;
+    for(const row of youthRows){
+      totalDiscount += Number(row['discountSum']||0);
+      youthTicketCount += Number(row['ticketCount']||1);
+    }
+
+    addLogT(`סה"כ הנחות: ₪${totalDiscount.toLocaleString()}`);
+    addLogT(`סה"כ כרטיסים: ${youthTicketCount}`);
+
+    // Read current stats and patch
+    const statsSnap = await getDoc(doc(db,'meta','stats'));
+    const currentStats = statsSnap.exists() ? statsSnap.data() : {};
+    const currentRevenue = currentStats.totalRevenue || 0;
+    const correctedRevenue = currentRevenue - totalDiscount;
+
+    await updateDoc(doc(db,'meta','stats'), {
+      totalRevenue: correctedRevenue,
+      youthCount: youthTicketCount,
+      youthDiscountSum: totalDiscount
+    });
+
+    addLogT(`✓ הכנסות מתוקנות: ₪${correctedRevenue.toLocaleString()} (קוזז ₪${totalDiscount.toLocaleString()})`, 'ok');
+    processBtn.textContent = 'הושלם ✓';
+    trackerLink.style.display = 'inline-block';
+    return;
+  }
 
   // Parking upload
   if(uploadType === 'parking'){
