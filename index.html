@@ -1028,12 +1028,13 @@ function updateStatsBar(){
     <div class="stat">מחודשים: <b class="badge yes">${stats.renewed}</b></div>
     <div class="stat">טרם חודשו: <b class="badge no">${stats.left}</b></div>
     <div class="stat">אחוז חידוש: <b>${stats.pct}%</b></div>
-    ${liveMeta.youthCount > 0 ? `<div class="stat">מנוי מחלקת נוער: <b class="badge yes clickable-badge" id="youthBadge" title="לחץ לצפייה ברשימה">${liveMeta.youthCount}</b>${liveMeta.youthDiscountSum > 0 ? ` <span style="color:var(--danger);font-size:12px">הנחות: ₪${liveMeta.youthDiscountSum.toLocaleString()}</span>` : ''}</div>` : ''}
+    ${liveMeta.youthCount > 0 ? `<div class="stat">מנוי מחלקת נוער: <b class="badge yes clickable-badge" id="youthBadge" title="לחץ לצפייה ברשימה">${liveMeta.youthCount}</b></div>` : ''}
     <div class="stat">מנויים חדשים (עונה חדשה): <b class="badge yes clickable-badge" id="newBuyersBadge" title="לחץ לצפייה ברשימה">${liveMeta.newBuyers}</b></div>
     ${netanyaLine}
     ${liveMeta.miluimDiscount > 0 ? `<div class="stat" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px; width:100%; display:flex; gap:16px; flex-wrap:wrap;">
         <span style="color:var(--muted); font-size:13px">החזר מילואים: <b style="color:var(--danger)">₪${liveMeta.miluimDiscount.toLocaleString()}</b></span>
-        <span style="color:var(--muted); font-size:13px">הכנסות נטו: <b style="font-size:14px; color:var(--accent2)">₪${(totalRevWithNetanya - liveMeta.miluimDiscount).toLocaleString()}</b></span>
+        ${liveMeta.youthDiscountSum > 0 ? `<span style="color:var(--muted); font-size:13px">הנחות נוער: <b style="color:var(--danger)">₪${liveMeta.youthDiscountSum.toLocaleString()}</b></span>` : ''}
+        <span style="color:var(--muted); font-size:13px">הכנסות נטו: <b style="font-size:14px; color:var(--accent2)">₪${(totalRevWithNetanya - liveMeta.miluimDiscount - liveMeta.youthDiscountSum).toLocaleString()}</b></span>
       </div>` : ''}
     <div class="stat" style="color:var(--muted); font-size:12px">עודכן לאחרונה: ${liveMeta.lastUpdated}</div>
   `;
