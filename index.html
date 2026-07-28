@@ -231,7 +231,7 @@
 
 <header>
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
-    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.8)</span></h1>
+    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.9)</span></h1>
     <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; margin-top:4px">
       <div style="display:flex; gap:8px; align-items:center">
         <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
@@ -1033,7 +1033,7 @@ function updateStatsBar(){
     ${netanyaLine}
     ${liveMeta.miluimDiscount > 0 ? `<div class="stat" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px; width:100%; display:flex; gap:16px; flex-wrap:wrap;">
         <span style="color:var(--muted); font-size:13px">החזר מילואים: <b style="color:var(--danger)">₪${liveMeta.miluimDiscount.toLocaleString()}</b></span>
-        ${liveMeta.youthDiscountSum > 0 ? `<span style="color:var(--muted); font-size:13px">הנחות נוער: <b style="color:var(--danger)">₪${liveMeta.youthDiscountSum.toLocaleString()}</b></span>` : ''}
+        ${liveMeta.youthDiscountSum > 0 ? `<span style="color:var(--muted); font-size:13px">הנחות מנויי נוער: <b style="color:var(--danger)">₪${liveMeta.youthDiscountSum.toLocaleString()}</b></span>` : ''}
         <span style="color:var(--muted); font-size:13px">הכנסות נטו: <b style="font-size:14px; color:var(--accent2)">₪${(totalRevWithNetanya - liveMeta.miluimDiscount - liveMeta.youthDiscountSum).toLocaleString()}</b></span>
       </div>` : ''}
     <div class="stat" style="color:var(--muted); font-size:12px">עודכן לאחרונה: ${liveMeta.lastUpdated}</div>
