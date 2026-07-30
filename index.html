@@ -231,7 +231,7 @@
 
 <header>
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
-    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.9)</span></h1>
+    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.0)</span></h1>
     <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; margin-top:4px">
       <div style="display:flex; gap:8px; align-items:center">
         <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
@@ -1029,6 +1029,8 @@ function updateStatsBar(){
     <div class="stat">טרם חודשו: <b class="badge no">${stats.left}</b></div>
     <div class="stat">אחוז חידוש: <b>${stats.pct}%</b></div>
     ${liveMeta.youthCount > 0 ? `<div class="stat">מנוי מחלקת נוער: <b class="badge yes clickable-badge" id="youthBadge" title="לחץ לצפייה ברשימה">${liveMeta.youthCount}</b></div>` : ''}
+    ${liveMeta.payingCount > 0 ? `<div class="stat">מנויים משלמים: <b class="badge yes">${liveMeta.payingCount.toLocaleString()}</b></div>` : ''}
+    ${liveMeta.payingCount > 0 ? `<div class="stat">ממוצע למנוי: <b style="color:var(--accent2)">₪${Math.round((liveMeta.totalRevenue + liveMeta.netanyaRevenue) / liveMeta.payingCount).toLocaleString()}</b></div>` : ''}
     <div class="stat">מנויים חדשים (עונה חדשה): <b class="badge yes clickable-badge" id="newBuyersBadge" title="לחץ לצפייה ברשימה">${liveMeta.newBuyers}</b></div>
     ${netanyaLine}
     ${liveMeta.miluimDiscount > 0 ? `<div class="stat" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px; width:100%; display:flex; gap:16px; flex-wrap:wrap;">
@@ -1155,7 +1157,8 @@ let liveMeta = {
   miluimDiscount: 0,
   youthCount: 0,
   youthList: [],
-  youthDiscountSum: 0
+  youthDiscountSum: 0,
+  payingCount: 0
 };
 
 let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
@@ -1188,6 +1191,7 @@ let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
       liveMeta.youthCount = d.youthCount ?? 0;
       liveMeta.youthList = d.youthList ?? [];
       liveMeta.youthDiscountSum = d.youthDiscountSum ?? 0;
+      liveMeta.payingCount = d.payingCount ?? 0;
       liveMeta.totalRevenue = Math.max(d.totalRevenue ?? 0, TOTAL_REVENUE);
       liveMeta.lastUpdated = d.lastUpdated && d.totalNewSeason >= TOTAL_NEW_SEASON ? d.lastUpdated : LAST_UPDATED;
       liveMeta.newBuyersList = d.newBuyersList ?? [];
