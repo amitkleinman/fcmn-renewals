@@ -94,7 +94,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.8 · 30/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.9 · 30/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -179,7 +179,7 @@ processBtn.addEventListener('click', async ()=>{
     function addLogT(msg,cls=''){ const d=document.createElement('div'); d.className='log-line '+cls; d.textContent=msg; logEl.appendChild(d); }
     addLogT('מעבד קובץ עסקאות...','head');
 
-    const youthRows = parsedData.filter(row => String(row['underShopInfo.name']||'').includes('נוער'));
+    const youthRows = parsedData.filter(row => Number(row['discountSum']||0) > 0 && row['coupons'] && String(row['coupons']).trim() !== '' && String(row['coupons']).trim() !== '-');
     addLogT(`נמצאו ${youthRows.length} עסקאות מחלקת נוער`);
 
     let totalDiscount = 0;
