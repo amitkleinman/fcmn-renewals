@@ -350,6 +350,12 @@ processBtn.addEventListener('click', async ()=>{
   const newBuyers = newBuyersList.length;
   const totalNewSeason = parsedData.length;
   const youthCount = parsedData.filter(row => String(row['underShopId']||'') === '6a65e8335d3854db36844878').length;
+  // Paying subscribers: price > 0 OR youth (deduplicated)
+  const payingCount = parsedData.filter(row => {
+    const price = Number(row['price']||0);
+    const isYouth = String(row['underShopId']||'') === '6a65e8335d3854db36844878';
+    return price > 0 || isYouth;
+  }).length;
 
   addLog(`מחודשים (לפי מחיר): ${totalRenewals} · מסומנים: ${uniqueIds.length} · חדשים: ${newBuyers} · סה"כ: ${totalNewSeason}`);
   addLog(`הכנסות ברוטו: ₪${totalRevenue.toLocaleString()}`);
@@ -383,6 +389,7 @@ processBtn.addEventListener('click', async ()=>{
     totalNewSeason: totalNewSeason,
     newBuyers,
     youthCount,
+    payingCount,
     youthList: existingYouthList,
     youthDiscountSum: existingYouthDiscountSum,
     totalRevenue: totalRevenue,
