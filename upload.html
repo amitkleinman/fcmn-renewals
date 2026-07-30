@@ -94,7 +94,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.7 · 28/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 1.8 · 30/07/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -374,11 +374,17 @@ processBtn.addEventListener('click', async ()=>{
   addLog('שומר מפת מושבים...');
   await setDoc(doc(db,'meta','seatStatus'), seatStatus);
 
-  // Save meta to Firestore
+  // Save meta to Firestore - preserve youthList and youthDiscountSum from transactions upload
+  const existingStats = await getDoc(doc(db,'meta','stats'));
+  const existingYouthList = existingStats.exists() ? (existingStats.data().youthList || []) : [];
+  const existingYouthDiscountSum = existingStats.exists() ? (existingStats.data().youthDiscountSum || 0) : 0;
+
   await setDoc(doc(db,'meta','stats'), {
     totalNewSeason: totalNewSeason,
     newBuyers,
     youthCount,
+    youthList: existingYouthList,
+    youthDiscountSum: existingYouthDiscountSum,
     totalRevenue: totalRevenue,
     kasherCount,
     kasherRevenue,
