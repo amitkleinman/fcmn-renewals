@@ -94,7 +94,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 2.0 · 31/07/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 2.1 · 02/08/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -364,6 +364,9 @@ processBtn.addEventListener('click', async ()=>{
     } else {
       newBuyersList.push(`${name} | ${section} שורה ${r} מושב ${s}`);
       seatStatus[key] = {status: 'new', name};
+      // Also mark the last-season ID as occupied so map doesn't show red
+      const id = bySeat.get(key);
+      if(id !== undefined) matchedIds.push(id);
     }
   }
 
