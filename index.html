@@ -231,7 +231,7 @@
 
 <header>
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
-    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.0)</span></h1>
+    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.1)</span></h1>
     <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; margin-top:4px">
       <div style="display:flex; gap:8px; align-items:center">
         <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
@@ -705,12 +705,24 @@ function refreshSeatMap(section, container){
           // Last-season ticket holder
           const isRenewed = !!renewals[String(t.id)];
           if(isRenewed) renewed++;
-          cell.className = 'map-seat ' + (isRenewed ? 'renewed' : 'not-renewed');
-          cell.textContent = s;
-          const tip = document.createElement('div');
-          tip.className = 'stip';
-          tip.textContent = `${t.name} · מושב ${s}`;
-          cell.appendChild(tip);
+          // Check if this seat was taken by a new buyer (different person)
+          const ssNew = liveSeatStatus[ssKey];
+          if(isRenewed && ssNew && ssNew.status === 'new') {
+            // New buyer took this seat
+            cell.className = 'map-seat new-buyer';
+            cell.textContent = s;
+            const tip = document.createElement('div');
+            tip.className = 'stip';
+            tip.textContent = `${ssNew.name} · מושב ${s} · מנוי חדש`;
+            cell.appendChild(tip);
+          } else {
+            cell.className = 'map-seat ' + (isRenewed ? 'renewed' : 'not-renewed');
+            cell.textContent = s;
+            const tip = document.createElement('div');
+            tip.className = 'stip';
+            tip.textContent = `${t.name} · מושב ${s}`;
+            cell.appendChild(tip);
+          }
         } else if(ss) {
           // New seat this season (not in last season data)
           if(ss.status === 'renew') renewed++;
