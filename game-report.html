@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.8)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.9)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -250,7 +250,8 @@ function renderTable() {
     '<span>סה"כ כניסות אורחים: <b>' + totAway.toLocaleString() + '</b></span>' +
     '<span>סה"כ כרטיסים: <b>' + totTix.toLocaleString() + '</b></span>';
 
-  tbody.innerHTML = games.map(function(g) { return '<tr>' +
+  window._gameData = games;
+  tbody.innerHTML = games.map(function(g, i) { return '<tr>' +
     '<td class="date">' + g.date + '</td>' +
     '<td class="name">' + g.opponent + '</td>' +
     '<td class="num sub">' + g.seasonEnt.toLocaleString() + '</td>' +
@@ -260,7 +261,7 @@ function renderTable() {
     '<td class="num total">' + g.totalEnt.toLocaleString() + '</td>' +
     '<td style="background:transparent;border:none;padding:0"></td>' +
     '<td class="num">' + g.homePaid.toLocaleString() + '</td>' +
-    '<td class="num free" style="cursor:pointer;text-decoration:underline dotted" onclick="showFreeList(' + JSON.stringify(JSON.stringify(g.homeFreeList||[])) + ',\'' + g.opponent + '\')">' + g.homeFree.toLocaleString() + '</td>' +
+    '<td class="num free" style="cursor:pointer;text-decoration:underline dotted" onclick="showFreeList(' + i + ')">' + g.homeFree.toLocaleString() + '</td>' +
     '<td class="num sub">' + g.totalHomeTickets.toLocaleString() + '</td>' +
     '<td class="num away">' + g.awayPaid.toLocaleString() + '</td>' +
     '<td class="num free away">' + g.awayFree.toLocaleString() + '</td>' +
@@ -299,8 +300,10 @@ document.getElementById('exportBtn').addEventListener('click', function() {
 
 loadGames();
 
-function showFreeList(listJson, opponent) {
-  const list = JSON.parse(listJson);
+function showFreeList(idx) {
+  const g = window._gameData[idx];
+  const list = g.homeFreeList || [];
+  const opponent = g.opponent;
   if (!list || !list.length) return;
 
   const overlay = document.createElement('div');
