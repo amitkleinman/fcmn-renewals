@@ -46,7 +46,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.1)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.2)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -156,6 +156,7 @@ function readExcel(file) {
 }
 
 document.getElementById('processBtn').addEventListener('click', async () => {
+  if (typeof XLSX === 'undefined') { alert('ספריית Excel עדיין נטענת, נסה שוב'); return; }
   const date = document.getElementById('gameDate').value.trim();
   const opponent = document.getElementById('opponent').value.trim();
   const entranceFile = document.getElementById('entranceFile').files[0];
