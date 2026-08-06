@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.0)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -337,6 +337,8 @@ function editRevenue(idx) {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+  var closeBtn = box.querySelector('#closeRevBtn');
+  if(closeBtn) closeBtn.addEventListener('click', function() { overlay.remove(); });
   box.querySelector('#saveRevBtn').addEventListener('click', async function() {
     var upd = {};
     fields.forEach(function(f) { upd[f[0]] = parseFloat(box.querySelector('#rev_'+f[0]).value)||null; });
