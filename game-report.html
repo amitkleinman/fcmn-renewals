@@ -46,7 +46,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.2)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.3)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -113,25 +113,13 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
+const db = firebase.firestore();
 
-const app = initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
-const db = getFirestore(app);
 let games = [];
-
-// Load from Firestore on startup
-async function loadGames() {
-  try {
-    const snap = await getDocs(collection(db, 'gameReports'));
-    games = [];
-    snap.forEach(d => games.push(d.data()));
-    games.sort((a,b) => a.date.localeCompare(b.date));
-    renderTable();
-  } catch(e) { console.error('Load error:', e); }
-}
-loadGames();
 
 function log(msg, cls='') {
   const el = document.getElementById('logEl');
@@ -155,8 +143,17 @@ function readExcel(file) {
   });
 }
 
+async function loadGames() {
+  try {
+    const snap = await db.collection('gameReports').get();
+    games = [];
+    snap.forEach(d => games.push(d.data()));
+    games.sort((a,b) => a.date.localeCompare(b.date));
+    renderTable();
+  } catch(e) { console.error('Load error:', e); }
+}
+
 document.getElementById('processBtn').addEventListener('click', async () => {
-  if (typeof XLSX === 'undefined') { alert('ספריית Excel עדיין נטענת, נסה שוב'); return; }
   const date = document.getElementById('gameDate').value.trim();
   const opponent = document.getElementById('opponent').value.trim();
   const entranceFile = document.getElementById('entranceFile').files[0];
@@ -173,12 +170,10 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   const entrance = await readExcel(entranceFile);
   const tickets = await readExcel(ticketsFile);
 
-  log(`כניסות: ${entrance.length} שורות | כרטיסים: ${tickets.length} שורות`);
+  log('כניסות: ' + entrance.length + ' שורות | כרטיסים: ' + tickets.length + ' שורות');
 
-  // === ENTRANCE ===
   const seasonEnt = entrance.filter(r => r['LFC_ID'] && r['LFC_ID'] !== '');
   const regularEnt = entrance.filter(r => !r['LFC_ID'] || r['LFC_ID'] === '');
-  // Away fans use turnstile 23-x
   const awayEnt = entrance.filter(r => String(r['Turnstile']||'').startsWith('23'));
   const homeTicketEnt = regularEnt.filter(r => !String(r['Turnstile']||'').startsWith('23'));
 
@@ -188,7 +183,6 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   const totalHomeEnt = seasonEntCount + homeTicketEntCount;
   const awayEntCount = awayEnt.length;
 
-  // === TICKETS ===
   const gameTickets = tickets.filter(r => String(r['ticketName']||'').includes('כרטיס כניסה'));
   const homeTickets = gameTickets.filter(r => !String(r['category']||'').includes('מזרחי'));
   const awayTickets = gameTickets.filter(r => String(r['category']||'').includes('מזרחי'));
@@ -198,43 +192,27 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   const awayPaid = awayTickets.filter(r => r['price'] > 0);
   const awayFree = awayTickets.filter(r => !r['price'] || r['price'] === 0);
 
-  const totalTickets = gameTickets.length;
+  log('✓ כניסות: מנויים ' + seasonEntCount + ' | בית(כרטיס) ' + homeTicketEntCount + ' | אורחים ' + awayEntCount + ' | סה"כ ' + totalEnt, 'ok');
+  log('✓ כרטיסים: בית ' + homePaid.length + ' בתשלום + ' + homeFree.length + ' חינם | אורח ' + awayPaid.length + ' בתשלום + ' + awayFree.length + ' חינם', 'ok');
 
-  log(`✓ כניסות: מנויים ${seasonEntCount} | בית(כרטיס) ${homeTicketEntCount} | אורחים ${awayEntCount} | סה"כ ${totalEnt}`, 'ok');
-  log(`✓ כרטיסים: בית ${homePaid.length} בתשלום + ${homeFree.length} חינם | אורח ${awayPaid.length} בתשלום + ${awayFree.length} חינם`, 'ok');
-
+  const gameId = 'game_' + date.replace(/\//g,'_') + '_' + opponent.replace(/\s/g,'_');
   const game = {
-    date,
-    opponent,
-    // Entrances
-    seasonEnt: seasonEntCount,
-    homeTicketEnt: homeTicketEntCount,
-    totalHomeEnt,
-    awayEnt: awayEntCount,
-    totalEnt,
-    // Tickets
-    homePaid: homePaid.length,
-    homeFree: homeFree.length,
+    id: gameId, date, opponent,
+    seasonEnt: seasonEntCount, homeTicketEnt: homeTicketEntCount,
+    totalHomeEnt, awayEnt: awayEntCount, totalEnt,
+    homePaid: homePaid.length, homeFree: homeFree.length,
     totalHomeTickets: homeTickets.length,
-    awayPaid: awayPaid.length,
-    awayFree: awayFree.length,
-    totalTickets,
-    // Revenue (placeholder for later)
-    revenue: null
+    awayPaid: awayPaid.length, awayFree: awayFree.length,
+    totalTickets: gameTickets.length, revenue: null
   };
 
-  // Save to Firestore
-  const gameId = 'game_' + date.replace(/\//g,'') + '_' + opponent.replace(/\s/g,'');
-  game.id = gameId;
   try {
-    await setDoc(doc(db,'gameReports',gameId), game);
+    await db.collection('gameReports').doc(gameId).set(game);
     games.push(game);
     games.sort((a,b) => a.date.localeCompare(b.date));
     renderTable();
     log('✓ המשחק נוסף לטבלה', 'ok');
-  } catch(e) {
-    log('שגיאה בשמירה: ' + e.message, 'err');
-  }
+  } catch(e) { log('שגיאה בשמירה: ' + e.message, 'err'); }
 });
 
 function renderTable() {
@@ -243,7 +221,7 @@ function renderTable() {
   const summaryBar = document.getElementById('summaryBar');
 
   if (games.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="13" class="no-data">העלה קבצי כניסות וכרטיסים להוספת משחק</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="no-data">העלה קבצי כניסות וכרטיסים להוספת משחק</td></tr>';
     actionsBar.style.display = 'none';
     summaryBar.style.display = 'none';
     return;
@@ -252,74 +230,64 @@ function renderTable() {
   actionsBar.style.display = 'flex';
   summaryBar.style.display = 'flex';
 
-  // Summary totals
   const totEnt = games.reduce((s,g) => s+g.totalEnt, 0);
   const totHome = games.reduce((s,g) => s+g.totalHomeEnt, 0);
   const totAway = games.reduce((s,g) => s+g.awayEnt, 0);
   const totTix = games.reduce((s,g) => s+g.totalTickets, 0);
-  summaryBar.innerHTML = `
-    <span>משחקים: <b>${games.length}</b></span>
-    <span>סה"כ כניסות: <b>${totEnt.toLocaleString()}</b></span>
-    <span>ממוצע לכניסות: <b>${Math.round(totEnt/games.length).toLocaleString()}</b></span>
-    <span>סה"כ כניסות בית: <b>${totHome.toLocaleString()}</b></span>
-    <span>סה"כ כניסות אורחים: <b>${totAway.toLocaleString()}</b></span>
-    <span>סה"כ כרטיסים: <b>${totTix.toLocaleString()}</b></span>
-  `;
+  summaryBar.innerHTML =
+    '<span>משחקים: <b>' + games.length + '</b></span>' +
+    '<span>סה"כ כניסות: <b>' + totEnt.toLocaleString() + '</b></span>' +
+    '<span>ממוצע כניסות: <b>' + Math.round(totEnt/games.length).toLocaleString() + '</b></span>' +
+    '<span>סה"כ כניסות בית: <b>' + totHome.toLocaleString() + '</b></span>' +
+    '<span>סה"כ כניסות אורחים: <b>' + totAway.toLocaleString() + '</b></span>' +
+    '<span>סה"כ כרטיסים: <b>' + totTix.toLocaleString() + '</b></span>';
 
-  tbody.innerHTML = games.map(g => `
-    <tr>
-      <td class="date">${g.date}</td>
-      <td class="name">${g.opponent}</td>
-      <td class="num sub">${g.seasonEnt.toLocaleString()}</td>
-      <td class="num sub">${g.homeTicketEnt.toLocaleString()}</td>
-      <td class="num total">${g.totalHomeEnt.toLocaleString()}</td>
-      <td class="num away">${g.awayEnt.toLocaleString()}</td>
-      <td class="num total">${g.totalEnt.toLocaleString()}</td>
-      <td class="num">${g.homePaid.toLocaleString()}</td>
-      <td class="num free">${g.homeFree.toLocaleString()}</td>
-      <td class="num sub">${g.totalHomeTickets.toLocaleString()}</td>
-      <td class="num away">${g.awayPaid.toLocaleString()}</td>
-      <td class="num free away">${g.awayFree.toLocaleString()}</td>
-      <td class="num total">${g.totalTickets.toLocaleString()}</td>
-      <td class="num" style="color:var(--muted)">${g.revenue !== null ? '₪'+g.revenue.toLocaleString() : '—'}</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = games.map(function(g) { return '<tr>' +
+    '<td class="date">' + g.date + '</td>' +
+    '<td class="name">' + g.opponent + '</td>' +
+    '<td class="num sub">' + g.seasonEnt.toLocaleString() + '</td>' +
+    '<td class="num sub">' + g.homeTicketEnt.toLocaleString() + '</td>' +
+    '<td class="num total">' + g.totalHomeEnt.toLocaleString() + '</td>' +
+    '<td class="num away">' + g.awayEnt.toLocaleString() + '</td>' +
+    '<td class="num total">' + g.totalEnt.toLocaleString() + '</td>' +
+    '<td class="num">' + g.homePaid.toLocaleString() + '</td>' +
+    '<td class="num free">' + g.homeFree.toLocaleString() + '</td>' +
+    '<td class="num sub">' + g.totalHomeTickets.toLocaleString() + '</td>' +
+    '<td class="num away">' + g.awayPaid.toLocaleString() + '</td>' +
+    '<td class="num free away">' + g.awayFree.toLocaleString() + '</td>' +
+    '<td class="num total">' + g.totalTickets.toLocaleString() + '</td>' +
+    '<td class="num" style="color:var(--muted)">' + (g.revenue !== null ? '₪'+g.revenue.toLocaleString() : '—') + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
-document.getElementById('clearBtn').addEventListener('click', () => {
+document.getElementById('clearBtn').addEventListener('click', async function() {
   if (confirm('למחוק את כל הנתונים?')) {
     for (const g of games) {
-      if (g.id) await deleteDoc(doc(db,'gameReports',g.id));
+      if (g.id) await db.collection('gameReports').doc(g.id).delete();
     }
     games = [];
     renderTable();
   }
 });
 
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const rows = games.map(g => ({
-    'תאריך': g.date,
-    'יריב': g.opponent,
-    'כניסות מנויים': g.seasonEnt,
-    'כניסות בית (כרטיס)': g.homeTicketEnt,
-    'סה"כ כניסות בית': g.totalHomeEnt,
-    'כניסות אורחים': g.awayEnt,
-    'סה"כ כניסות': g.totalEnt,
-    'כרטיסי בית בתשלום': g.homePaid,
-    'כרטיסי בית חינם': g.homeFree,
-    'סה"כ כרטיסי בית': g.totalHomeTickets,
-    'כרטיסי אורח בתשלום': g.awayPaid,
-    'כרטיסי אורח חינם': g.awayFree,
-    'סה"כ כרטיסים': g.totalTickets,
-    'הכנסות': g.revenue || ''
-  }));
+document.getElementById('exportBtn').addEventListener('click', function() {
+  const rows = games.map(function(g) { return {
+    'תאריך': g.date, 'יריב': g.opponent,
+    'כניסות מנויים': g.seasonEnt, 'כניסות בית (כרטיס)': g.homeTicketEnt,
+    'סה"כ כניסות בית': g.totalHomeEnt, 'כניסות אורחים': g.awayEnt,
+    'סה"כ כניסות': g.totalEnt, 'כרטיסי בית בתשלום': g.homePaid,
+    'כרטיסי בית חינם': g.homeFree, 'סה"כ כרטיסי בית': g.totalHomeTickets,
+    'כרטיסי אורח בתשלום': g.awayPaid, 'כרטיסי אורח חינם': g.awayFree,
+    'סה"כ כרטיסים': g.totalTickets, 'הכנסות': g.revenue || ''
+  }; });
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, 'דוח משחקים');
   XLSX.writeFile(wb, 'דוח_משחקים_מכבי_נתניה.xlsx');
 });
 
-// Initial render handled by loadGames()
+loadGames();
 </script>
 </body>
 </html>
