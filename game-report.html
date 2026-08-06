@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>דוח משחקים - מכבי נתניה</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f2330;--border:#2b3040;--text:#e8eaf0;--muted:#9aa3b5;--accent:#f5c518;--accent2:#2dd4a3;--danger:#ef5b5b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;min-height:100vh;padding:20px;font-size:13px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  h1{font-size:20px;display:flex;align-items:center;gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .back-link{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--border);padding:6px 12px;border-radius:7px}
+  .upload-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .upload-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px}
+  .upload-group label{font-size:12px;color:var(--muted)}
+  .upload-group input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%}
+  .upload-group input[type=file]{background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:7px;font-size:12px;width:100%}
+  .btn{padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none}
+  .btn-primary{background:var(--accent);color:#14161c}
+  .btn-secondary{background:var(--panel2);color:var(--muted);border:1px solid var(--border)}
+  .btn:hover{opacity:0.85}
+  .log{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);display:none}
+  .log .ok{color:var(--accent2)}
+  .log .err{color:var(--danger)}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;margin-top:8px}
+  table{border-collapse:collapse;width:100%;min-width:900px}
+  th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+  th{background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;position:sticky;top:0}
+  th.group{background:#1a1d28;color:var(--accent);font-size:10px;text-align:center;border-bottom:2px solid var(--accent)}
+  td.date{color:var(--muted);font-size:12px}
+  td.name{font-weight:600;color:var(--text)}
+  td.num{text-align:center;color:var(--text)}
+  td.total{font-weight:700;color:var(--accent)}
+  td.sub{color:var(--accent2)}
+  td.away{color:#a78bfa}
+  td.free{color:var(--muted)}
+  tr:hover td{background:#1c2030}
+  .no-data{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+  .summary-bar{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--muted)}
+  .summary-bar b{color:var(--text)}
+  .actions{display:flex;gap:8px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.0)</span></h1>
+  <a href="index.html" class="back-link">← חזור לטרקר</a>
+</header>
+
+<!-- Upload form -->
+<div class="upload-area">
+  <div class="upload-group">
+    <label>תאריך משחק</label>
+    <input type="text" id="gameDate" placeholder="25/07/2026">
+  </div>
+  <div class="upload-group">
+    <label>יריב</label>
+    <input type="text" id="opponent" placeholder="הפועל ירושלים">
+  </div>
+  <div class="upload-group">
+    <label>קובץ כניסות (entrance report)</label>
+    <input type="file" id="entranceFile" accept=".xlsx,.csv">
+  </div>
+  <div class="upload-group">
+    <label>קובץ כרטיסים (tickets export)</label>
+    <input type="file" id="ticketsFile" accept=".xlsx,.csv">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="btn btn-primary" id="processBtn">עבד קבצים</button>
+  </div>
+</div>
+
+<div class="log" id="logEl"></div>
+
+<div class="actions" id="actionsBar" style="display:none">
+  <button class="btn btn-secondary" id="exportBtn">📥 ייצא לאקסל</button>
+  <button class="btn btn-secondary" id="clearBtn">🗑 נקה הכל</button>
+</div>
+
+<div class="summary-bar" id="summaryBar" style="display:none"></div>
+
+<div class="table-wrap">
+  <table id="reportTable">
+    <thead>
+      <tr>
+        <th rowspan="2">תאריך</th>
+        <th rowspan="2">יריב</th>
+        <th colspan="5" class="group">כניסות</th>
+        <th colspan="6" class="group">כרטיסים</th>
+        <th rowspan="2" class="group" style="background:#1a2a1a;color:var(--accent2)">הכנסות</th>
+      </tr>
+      <tr>
+        <th>מנויים</th>
+        <th>בית (כרטיס)</th>
+        <th>סה"כ בית</th>
+        <th>אורחים</th>
+        <th>סה"כ</th>
+        <th>בית בתשלום</th>
+        <th>בית חינם</th>
+        <th>סה"כ בית</th>
+        <th>אורח בתשלום</th>
+        <th>אורח חינם</th>
+        <th>סה"כ כרטיסים</th>
+      </tr>
+    </thead>
+    <tbody id="reportBody">
+      <tr><td colspan="13" class="no-data">העלה קבצי כניסות וכרטיסים להוספת משחק</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// Store games in localStorage
+let games = JSON.parse(localStorage.getItem('fcmn_game_reports') || '[]');
+
+function log(msg, cls='') {
+  const el = document.getElementById('logEl');
+  el.style.display = 'block';
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = msg;
+  el.appendChild(d);
+}
+
+function readExcel(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      res(XLSX.utils.sheet_to_json(ws));
+    };
+    reader.onerror = rej;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  const date = document.getElementById('gameDate').value.trim();
+  const opponent = document.getElementById('opponent').value.trim();
+  const entranceFile = document.getElementById('entranceFile').files[0];
+  const ticketsFile = document.getElementById('ticketsFile').files[0];
+
+  if (!date || !opponent || !entranceFile || !ticketsFile) {
+    alert('נא למלא את כל השדות ולהעלות את שני הקבצים');
+    return;
+  }
+
+  document.getElementById('logEl').innerHTML = '';
+  log('מעבד קבצים...');
+
+  const entrance = await readExcel(entranceFile);
+  const tickets = await readExcel(ticketsFile);
+
+  log(`כניסות: ${entrance.length} שורות | כרטיסים: ${tickets.length} שורות`);
+
+  // === ENTRANCE ===
+  const seasonEnt = entrance.filter(r => r['LFC_ID'] && r['LFC_ID'] !== '');
+  const regularEnt = entrance.filter(r => !r['LFC_ID'] || r['LFC_ID'] === '');
+  // Away fans use turnstile 23-x
+  const awayEnt = entrance.filter(r => String(r['Turnstile']||'').startsWith('23'));
+  const homeTicketEnt = regularEnt.filter(r => !String(r['Turnstile']||'').startsWith('23'));
+
+  const totalEnt = entrance.length;
+  const seasonEntCount = seasonEnt.length;
+  const homeTicketEntCount = homeTicketEnt.length;
+  const totalHomeEnt = seasonEntCount + homeTicketEntCount;
+  const awayEntCount = awayEnt.length;
+
+  // === TICKETS ===
+  const gameTickets = tickets.filter(r => String(r['ticketName']||'').includes('כרטיס כניסה'));
+  const homeTickets = gameTickets.filter(r => !String(r['category']||'').includes('מזרחי'));
+  const awayTickets = gameTickets.filter(r => String(r['category']||'').includes('מזרחי'));
+
+  const homePaid = homeTickets.filter(r => r['price'] > 0);
+  const homeFree = homeTickets.filter(r => !r['price'] || r['price'] === 0);
+  const awayPaid = awayTickets.filter(r => r['price'] > 0);
+  const awayFree = awayTickets.filter(r => !r['price'] || r['price'] === 0);
+
+  const totalTickets = gameTickets.length;
+
+  log(`✓ כניסות: מנויים ${seasonEntCount} | בית(כרטיס) ${homeTicketEntCount} | אורחים ${awayEntCount} | סה"כ ${totalEnt}`, 'ok');
+  log(`✓ כרטיסים: בית ${homePaid.length} בתשלום + ${homeFree.length} חינם | אורח ${awayPaid.length} בתשלום + ${awayFree.length} חינם`, 'ok');
+
+  const game = {
+    date,
+    opponent,
+    // Entrances
+    seasonEnt: seasonEntCount,
+    homeTicketEnt: homeTicketEntCount,
+    totalHomeEnt,
+    awayEnt: awayEntCount,
+    totalEnt,
+    // Tickets
+    homePaid: homePaid.length,
+    homeFree: homeFree.length,
+    totalHomeTickets: homeTickets.length,
+    awayPaid: awayPaid.length,
+    awayFree: awayFree.length,
+    totalTickets,
+    // Revenue (placeholder for later)
+    revenue: null
+  };
+
+  games.push(game);
+  localStorage.setItem('fcmn_game_reports', JSON.stringify(games));
+  renderTable();
+  log('✓ המשחק נוסף לטבלה', 'ok');
+});
+
+function renderTable() {
+  const tbody = document.getElementById('reportBody');
+  const actionsBar = document.getElementById('actionsBar');
+  const summaryBar = document.getElementById('summaryBar');
+
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="13" class="no-data">העלה קבצי כניסות וכרטיסים להוספת משחק</td></tr>';
+    actionsBar.style.display = 'none';
+    summaryBar.style.display = 'none';
+    return;
+  }
+
+  actionsBar.style.display = 'flex';
+  summaryBar.style.display = 'flex';
+
+  // Summary totals
+  const totEnt = games.reduce((s,g) => s+g.totalEnt, 0);
+  const totHome = games.reduce((s,g) => s+g.totalHomeEnt, 0);
+  const totAway = games.reduce((s,g) => s+g.awayEnt, 0);
+  const totTix = games.reduce((s,g) => s+g.totalTickets, 0);
+  summaryBar.innerHTML = `
+    <span>משחקים: <b>${games.length}</b></span>
+    <span>סה"כ כניסות: <b>${totEnt.toLocaleString()}</b></span>
+    <span>ממוצע לכניסות: <b>${Math.round(totEnt/games.length).toLocaleString()}</b></span>
+    <span>סה"כ כניסות בית: <b>${totHome.toLocaleString()}</b></span>
+    <span>סה"כ כניסות אורחים: <b>${totAway.toLocaleString()}</b></span>
+    <span>סה"כ כרטיסים: <b>${totTix.toLocaleString()}</b></span>
+  `;
+
+  tbody.innerHTML = games.map(g => `
+    <tr>
+      <td class="date">${g.date}</td>
+      <td class="name">${g.opponent}</td>
+      <td class="num sub">${g.seasonEnt.toLocaleString()}</td>
+      <td class="num sub">${g.homeTicketEnt.toLocaleString()}</td>
+      <td class="num total">${g.totalHomeEnt.toLocaleString()}</td>
+      <td class="num away">${g.awayEnt.toLocaleString()}</td>
+      <td class="num total">${g.totalEnt.toLocaleString()}</td>
+      <td class="num">${g.homePaid.toLocaleString()}</td>
+      <td class="num free">${g.homeFree.toLocaleString()}</td>
+      <td class="num sub">${g.totalHomeTickets.toLocaleString()}</td>
+      <td class="num away">${g.awayPaid.toLocaleString()}</td>
+      <td class="num free away">${g.awayFree.toLocaleString()}</td>
+      <td class="num total">${g.totalTickets.toLocaleString()}</td>
+      <td class="num" style="color:var(--muted)">${g.revenue !== null ? '₪'+g.revenue.toLocaleString() : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('למחוק את כל הנתונים?')) {
+    games = [];
+    localStorage.setItem('fcmn_game_reports', '[]');
+    renderTable();
+  }
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const rows = games.map(g => ({
+    'תאריך': g.date,
+    'יריב': g.opponent,
+    'כניסות מנויים': g.seasonEnt,
+    'כניסות בית (כרטיס)': g.homeTicketEnt,
+    'סה"כ כניסות בית': g.totalHomeEnt,
+    'כניסות אורחים': g.awayEnt,
+    'סה"כ כניסות': g.totalEnt,
+    'כרטיסי בית בתשלום': g.homePaid,
+    'כרטיסי בית חינם': g.homeFree,
+    'סה"כ כרטיסי בית': g.totalHomeTickets,
+    'כרטיסי אורח בתשלום': g.awayPaid,
+    'כרטיסי אורח חינם': g.awayFree,
+    'סה"כ כרטיסים': g.totalTickets,
+    'הכנסות': g.revenue || ''
+  }));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'דוח משחקים');
+  XLSX.writeFile(wb, 'דוח_משחקים_מכבי_נתניה.xlsx');
+});
+
+// Initial render
+renderTable();
+</script>
+</body>
+</html>
