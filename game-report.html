@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.7)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.8)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -311,7 +311,7 @@ function showFreeList(listJson, opponent) {
 
   const header = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
     '<b style="font-size:15px">כרטיסי חינם - ' + opponent + ' (' + list.length + ')</b>' +
-    '<button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>' +
+    '<button onclick="this.closest(\'[style*=position]\').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>' +
     '</div>';
 
   const colHeader = '<div style="display:grid;grid-template-columns:1fr 100px;gap:8px;font-size:11px;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:6px">' +
