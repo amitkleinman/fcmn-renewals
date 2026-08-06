@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.1)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.2)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -326,22 +326,47 @@ function editRevenue(idx) {
   overlay.style.cssText = 'position:fixed;inset:0;background:#0009;z-index:1000;display:flex;align-items:center;justify-content:center';
   var box = document.createElement('div');
   box.style.cssText = 'background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;min-width:320px;direction:rtl';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px';
+  var titleText = document.createElement('b');
+  titleText.textContent = g.opponent + ' — עדכון הכנסות';
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer';
+  closeBtn.onclick = function() { overlay.remove(); };
+  title.appendChild(titleText);
+  title.appendChild(closeBtn);
+  box.appendChild(title);
+
+  var fromFile = document.createElement('div');
+  fromFile.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px';
+  fromFile.textContent = 'מהקובץ: ₪' + (g.revenueFromFile||0).toLocaleString();
+  box.appendChild(fromFile);
+
   var fields = [['revenueManual','ברוטו (ידני)'],['fee','עמלה'],['cashiers','קופאים'],['vat','מע"מ']];
-  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><b>' + g.opponent + ' — עדכון הכנסות</b><button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button></div>' +
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">מהקובץ: ₪' + (g.revenueFromFile||0).toLocaleString() + '</div>' +
-    fields.map(function(f) {
-      return '<div style="margin-bottom:10px"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">' + f[1] + '</label>' +
-        '<input id="rev_'+f[0]+'" type="number" value="'+(g[f[0]]||'')+'" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px"></div>';
-    }).join('') +
-    '<button id="saveRevBtn" style="width:100%;padding:10px;background:var(--accent);color:#14161c;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-top:4px">שמור</button>';
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
-  var closeBtn = box.querySelector('#closeRevBtn');
-  if(closeBtn) closeBtn.addEventListener('click', function() { overlay.remove(); });
-  box.querySelector('#saveRevBtn').addEventListener('click', async function() {
+  fields.forEach(function(f) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:10px';
+    var label = document.createElement('label');
+    label.style.cssText = 'font-size:12px;color:var(--muted);display:block;margin-bottom:4px';
+    label.textContent = f[1];
+    var input = document.createElement('input');
+    input.type = 'number';
+    input.id = 'rev_' + f[0];
+    input.value = g[f[0]] || '';
+    input.style.cssText = 'width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px';
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    box.appendChild(wrap);
+  });
+
+  var saveBtn = document.createElement('button');
+  saveBtn.textContent = 'שמור';
+  saveBtn.style.cssText = 'width:100%;padding:10px;background:var(--accent);color:#14161c;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-top:4px';
+  saveBtn.addEventListener('click', async function() {
     var upd = {};
-    fields.forEach(function(f) { upd[f[0]] = parseFloat(box.querySelector('#rev_'+f[0]).value)||null; });
+    fields.forEach(function(f) { upd[f[0]] = parseFloat(document.getElementById('rev_'+f[0]).value)||null; });
     Object.assign(g, upd);
     try {
       await db.collection('gameReports').doc(g.id).update(upd);
@@ -349,8 +374,12 @@ function editRevenue(idx) {
       overlay.remove();
     } catch(e) { alert('שגיאה: ' + e.message); }
   });
-}
+  box.appendChild(saveBtn);
 
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+}
 function showFreeList(idx) {
   const g = window._gameData[idx];
   const list = g.homeFreeList || [];
