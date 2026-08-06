@@ -27,7 +27,8 @@
   /* Table */
   .table-wrap{overflow-x:auto;margin-top:8px}
   table{border-collapse:collapse;width:100%;min-width:900px}
-  th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+  th,td{padding:10px 12px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--border)}
+  td.date,td.name{text-align:right}
   th{background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;position:sticky;top:0}
   th.group{background:#1a1d28;color:var(--accent);font-size:10px;text-align:center;border-bottom:2px solid var(--accent)}
   td.date{color:var(--muted);font-size:12px}
@@ -46,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.3)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.6)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -88,9 +89,11 @@
       <tr>
         <th rowspan="2">תאריך</th>
         <th rowspan="2">יריב</th>
-        <th colspan="5" class="group">כניסות</th>
-        <th colspan="6" class="group">כרטיסים</th>
-        <th rowspan="2" class="group" style="background:#1a2a1a;color:var(--accent2)">הכנסות</th>
+        <th colspan="5" class="group">🚪 כניסות</th>
+        <th rowspan="2" style="background:transparent;width:16px;border:none;padding:0"></th>
+        <th colspan="6" class="group">🎫 כרטיסים</th>
+        <th rowspan="2" style="background:transparent;width:16px;border:none;padding:0"></th>
+        <th rowspan="2" class="group" style="background:#1a2a1a;color:var(--accent2)">💰 הכנסות</th>
       </tr>
       <tr>
         <th>מנויים</th>
@@ -250,12 +253,14 @@ function renderTable() {
     '<td class="num total">' + g.totalHomeEnt.toLocaleString() + '</td>' +
     '<td class="num away">' + g.awayEnt.toLocaleString() + '</td>' +
     '<td class="num total">' + g.totalEnt.toLocaleString() + '</td>' +
+    '<td style="background:transparent;border:none;padding:0"></td>' +
     '<td class="num">' + g.homePaid.toLocaleString() + '</td>' +
     '<td class="num free">' + g.homeFree.toLocaleString() + '</td>' +
     '<td class="num sub">' + g.totalHomeTickets.toLocaleString() + '</td>' +
     '<td class="num away">' + g.awayPaid.toLocaleString() + '</td>' +
     '<td class="num free away">' + g.awayFree.toLocaleString() + '</td>' +
     '<td class="num total">' + g.totalTickets.toLocaleString() + '</td>' +
+    '<td style="background:transparent;border:none;padding:0"></td>' +
     '<td class="num" style="color:var(--muted)">' + (g.revenue !== null ? '₪'+g.revenue.toLocaleString() : '—') + '</td>' +
     '</tr>';
   }).join('');
