@@ -46,7 +46,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.0)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -113,9 +113,25 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-// Store games in localStorage
-let games = JSON.parse(localStorage.getItem('fcmn_game_reports') || '[]');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
+const db = getFirestore(app);
+let games = [];
+
+// Load from Firestore on startup
+async function loadGames() {
+  try {
+    const snap = await getDocs(collection(db, 'gameReports'));
+    games = [];
+    snap.forEach(d => games.push(d.data()));
+    games.sort((a,b) => a.date.localeCompare(b.date));
+    renderTable();
+  } catch(e) { console.error('Load error:', e); }
+}
+loadGames();
 
 function log(msg, cls='') {
   const el = document.getElementById('logEl');
@@ -206,10 +222,18 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     revenue: null
   };
 
-  games.push(game);
-  localStorage.setItem('fcmn_game_reports', JSON.stringify(games));
-  renderTable();
-  log('✓ המשחק נוסף לטבלה', 'ok');
+  // Save to Firestore
+  const gameId = 'game_' + date.replace(/\//g,'') + '_' + opponent.replace(/\s/g,'');
+  game.id = gameId;
+  try {
+    await setDoc(doc(db,'gameReports',gameId), game);
+    games.push(game);
+    games.sort((a,b) => a.date.localeCompare(b.date));
+    renderTable();
+    log('✓ המשחק נוסף לטבלה', 'ok');
+  } catch(e) {
+    log('שגיאה בשמירה: ' + e.message, 'err');
+  }
 });
 
 function renderTable() {
@@ -263,8 +287,10 @@ function renderTable() {
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   if (confirm('למחוק את כל הנתונים?')) {
+    for (const g of games) {
+      if (g.id) await deleteDoc(doc(db,'gameReports',g.id));
+    }
     games = [];
-    localStorage.setItem('fcmn_game_reports', '[]');
     renderTable();
   }
 });
@@ -292,8 +318,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   XLSX.writeFile(wb, 'דוח_משחקים_מכבי_נתניה.xlsx');
 });
 
-// Initial render
-renderTable();
+// Initial render handled by loadGames()
 </script>
 </body>
 </html>
