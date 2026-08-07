@@ -24,7 +24,6 @@
   .log .ok{color:var(--accent2)}
   .log .err{color:var(--danger)}
 
-  
   /* Table */
   .table-wrap{overflow-x:auto;margin-top:8px}
   table{border-collapse:collapse;width:100%;min-width:900px}
@@ -48,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.2)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.4)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -91,31 +90,20 @@
         <th rowspan="2">תאריך</th>
         <th rowspan="2">יריב</th>
         <th colspan="5" class="group">🚪 כניסות</th>
-        <th rowspan="2" style="background:transparent;width:16px;border:none;padding:0"></th>
+        <th rowspan="2" style="width:16px;background:transparent;border:none;padding:0"></th>
         <th colspan="6" class="group">🎫 כרטיסים</th>
-        <th rowspan="2" style="background:transparent;width:16px;border:none;padding:0"></th>
+        <th rowspan="2" style="width:16px;background:transparent;border:none;padding:0"></th>
         <th colspan="6" class="group" style="background:#1a2a1a;color:var(--accent2)">💰 הכנסות</th>
       </tr>
       <tr>
-        <th>מנויים</th>
-        <th>בית (כרטיס)</th>
-        <th>סה"כ בית</th>
-        <th>אורחים</th>
-        <th>סה"כ</th>
-        <th>בית בתשלום</th>
-        <th>בית חינם</th>
-        <th>סה"כ בית</th>
-        <th>אורח בתשלום</th>
-        <th>אורח חינם</th>
-        <th>סה"כ כרטיסים</th>
-      </tr>
-      <tr>
-        <th style="background:#1a2a1a;color:var(--accent2)">ברוטו (קובץ)</th>
-        <th style="background:#1a2a1a;color:var(--accent2)">ברוטו (ידני)</th>
+        <th>מנויים</th><th>בית (כרטיס)</th><th>סה"כ בית</th><th>אורחים</th><th>סה"כ</th>
+        <th>בית בתשלום</th><th>בית חינם</th><th>סה"כ בית</th><th>אורח בתשלום</th><th>אורח חינם</th><th>סה"כ כרטיסים</th>
+        <th style="background:#1a2a1a">ברוטו (קובץ)</th>
+        <th style="background:#1a2a1a">ברוטו (ידני)</th>
         <th style="background:#1a2a1a;color:var(--muted)">עמלה</th>
         <th style="background:#1a2a1a;color:var(--muted)">קופאים</th>
         <th style="background:#1a2a1a;color:var(--muted)">מע"מ</th>
-        <th style="background:#1a2a1a;color:var(--accent2);font-weight:700">נטו</th>
+        <th style="background:#1a2a1a;font-weight:700">נטו</th>
       </tr>
     </thead>
     <tbody id="reportBody">
