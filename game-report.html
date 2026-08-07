@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.4)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.7)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -55,7 +55,7 @@
 <div class="upload-area">
   <div class="upload-group">
     <label>תאריך משחק</label>
-    <input type="text" id="gameDate" placeholder="25/07/2026">
+    <input type="date" id="gameDate" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%">
   </div>
   <div class="upload-group">
     <label>יריב</label>
@@ -82,6 +82,7 @@
 </div>
 
 <div class="summary-bar" id="summaryBar" style="display:none"></div>
+<div class="summary-bar" id="incomeSummaryBar" style="display:none;border-top:1px solid var(--border);margin-top:-12px;border-radius:0 0 10px 10px"></div>
 
 <div class="table-wrap">
   <table id="reportTable">
@@ -154,12 +155,14 @@ async function loadGames() {
 }
 
 document.getElementById('processBtn').addEventListener('click', async () => {
-  const date = document.getElementById('gameDate').value.trim();
+  var rawDate = document.getElementById('gameDate').value.trim();
+  if(!rawDate){alert('נא לבחור תאריך');return;}
+  var dp=rawDate.split('-'); var date=dp[2]+'/'+dp[1]+'/'+dp[0];
   const opponent = document.getElementById('opponent').value.trim();
   const entranceFile = document.getElementById('entranceFile').files[0];
   const ticketsFile = document.getElementById('ticketsFile').files[0];
 
-  if (!date || !opponent || !entranceFile || !ticketsFile) {
+  if (!opponent || !entranceFile || !ticketsFile) {
     alert('נא למלא את כל השדות ולהעלות את שני הקבצים');
     return;
   }
@@ -254,6 +257,25 @@ function renderTable() {
     '<span>סה"כ כניסות אורחים: <b>' + totAway.toLocaleString() + '</b></span>' +
     '<span>סה"כ כרטיסים: <b>' + totTix.toLocaleString() + '</b></span>';
 
+  // Income summary bar
+  var incBar = document.getElementById('incomeSummaryBar');
+  var iRF=games.reduce(function(s,g){return s+(g.revenueFromFile||0);},0);
+  var iRM=games.reduce(function(s,g){return s+(g.revenueManual||0);},0);
+  var iFee=games.reduce(function(s,g){return s+(g.fee||0);},0);
+  var iCash=games.reduce(function(s,g){return s+(g.cashiers||0);},0);
+  var iVat=games.reduce(function(s,g){return s+(g.vat||0);},0);
+  var iGross=iRM||iRF; var iNet=iGross-iFee-iCash-iVat;
+  var iAvg=games.length>0?Math.round(iNet/games.length):0;
+  incBar.style.display = 'flex';
+  incBar.innerHTML =
+    '<span style="color:var(--accent2)">💰 הכנסות:</span>' +
+    '<span>ברוטו: <b style="color:var(--accent2)">₪' + iGross.toLocaleString() + '</b></span>' +
+    '<span>עמלה: <b style="color:var(--danger)">₪' + iFee.toLocaleString() + '</b></span>' +
+    '<span>קופאים: <b style="color:var(--danger)">₪' + iCash.toLocaleString() + '</b></span>' +
+    '<span>מע"מ: <b style="color:var(--danger)">₪' + iVat.toLocaleString() + '</b></span>' +
+    '<span>נטו: <b style="color:var(--accent);font-size:14px">₪' + iNet.toLocaleString() + '</b></span>' +
+    '<span>ממוצע נטו למשחק: <b style="color:var(--accent2)">₪' + iAvg.toLocaleString() + '</b></span>';
+
   window._gameData = games;
   tbody.innerHTML = games.map(function(g, i) { return '<tr>' +
     '<td class="date">' + g.date + '</td>' +
@@ -279,6 +301,44 @@ function renderTable() {
     (function() { var gross = g.revenueManual||g.revenueFromFile||0; var net = gross-(g.fee||0)-(g.cashiers||0)-(g.vat||0); return '<td class="num total" style="text-align:center">'+(gross?'₪'+net.toLocaleString():'—')+'</td>'; })() +
     '</tr>';
   }).join('');
+
+  // Totals row
+  var tSE=0,tHTE=0,tTHE=0,tAE=0,tTE=0,tHP=0,tHF=0,tTHT=0,tAP=0,tAF=0,tTT=0,tRF=0,tRM=0,tFee=0,tCash=0,tVat=0;
+  games.forEach(function(g){
+    tSE+=g.seasonEnt||0; tHTE+=g.homeTicketEnt||0; tTHE+=g.totalHomeEnt||0;
+    tAE+=g.awayEnt||0; tTE+=g.totalEnt||0; tHP+=g.homePaid||0; tHF+=g.homeFree||0;
+    tTHT+=g.totalHomeTickets||0; tAP+=g.awayPaid||0; tAF+=g.awayFree||0; tTT+=g.totalTickets||0;
+    tRF+=g.revenueFromFile||0; tRM+=g.revenueManual||0;
+    tFee+=g.fee||0; tCash+=g.cashiers||0; tVat+=g.vat||0;
+  });
+  var n=Math.max(games.length,1);
+  var tGross=tRM||tRF; var tNet=tGross-tFee-tCash-tVat;
+
+  var totalRow='<tr style="border-top:2px solid var(--accent);font-weight:700;background:#1c2030">' +
+    '<td colspan="2" style="color:var(--accent);text-align:right">סה"כ ('+n+' משחקים)</td>' +
+    '<td style="text-align:center">'+tSE.toLocaleString()+'</td>' +
+    '<td style="text-align:center">'+tHTE.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent)">'+tTHE.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:#a78bfa">'+tAE.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent)">'+tTE.toLocaleString()+'</td>' +
+    '<td style="background:transparent;border:none"></td>' +
+    '<td style="text-align:center">'+tHP.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--muted)">'+tHF.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent2)">'+tTHT.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:#a78bfa">'+tAP.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--muted)">'+tAF.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent)">'+tTT.toLocaleString()+'</td>' +
+    '<td style="background:transparent;border:none"></td>' +
+    '<td style="text-align:center;color:var(--accent2)">₪'+tRF.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent2)">'+(tRM?'₪'+tRM.toLocaleString():'—')+'</td>' +
+    '<td style="text-align:center;color:var(--muted)">₪'+tFee.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--muted)">₪'+tCash.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--muted)">₪'+tVat.toLocaleString()+'</td>' +
+    '<td style="text-align:center;color:var(--accent);font-weight:700">₪'+tNet.toLocaleString()+'</td>' +
+  '</tr>' +
+'';
+
+  tbody.innerHTML += totalRow;
 }
 
 document.getElementById('clearBtn').addEventListener('click', async function() {
