@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.8)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -69,6 +69,10 @@
     <label>קובץ כרטיסים (tickets export)</label>
     <input type="file" id="ticketsFile" accept=".xlsx,.csv">
   </div>
+  <div class="upload-group" style="min-width:90px"><label>בית בתשלום</label><input type="number" id="manualHomePaid" placeholder="מקובץ" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%"></div>
+  <div class="upload-group" style="min-width:90px"><label>בית חינם</label><input type="number" id="manualHomeFree" placeholder="מקובץ" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%"></div>
+  <div class="upload-group" style="min-width:90px"><label>אורח בתשלום</label><input type="number" id="manualAwayPaid" placeholder="מקובץ" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%"></div>
+  <div class="upload-group" style="min-width:90px"><label>אורח חינם</label><input type="number" id="manualAwayFree" placeholder="מקובץ" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%"></div>
   <div style="display:flex;flex-direction:column;gap:8px">
     <button class="btn btn-primary" id="processBtn">עבד קבצים</button>
   </div>
@@ -162,8 +166,8 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   const entranceFile = document.getElementById('entranceFile').files[0];
   const ticketsFile = document.getElementById('ticketsFile').files[0];
 
-  if (!opponent || !entranceFile || !ticketsFile) {
-    alert('נא למלא את כל השדות ולהעלות את שני הקבצים');
+  if (!opponent || !entranceFile) {
+    alert('נא למלא שם יריב ולהעלות קובץ כניסות');
     return;
   }
 
@@ -171,27 +175,41 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   log('מעבד קבצים...');
 
   const entrance = await readExcel(entranceFile);
-  const tickets = await readExcel(ticketsFile);
+  const tickets = ticketsFile ? await readExcel(ticketsFile) : [];
+  log('כניסות: ' + entrance.length + ' שורות' + (tickets.length ? ' | כרטיסים: ' + tickets.length + ' שורות' : ' | ללא קובץ כרטיסים'));
 
-  log('כניסות: ' + entrance.length + ' שורות | כרטיסים: ' + tickets.length + ' שורות');
-
+  const seasonEntFromFile = tickets.filter(r =>
+    String(r['origin']||'').toLowerCase() === 'transfer' &&
+    String(r['ticketName']||'').includes('מנוי') &&
+    !String(r['category']||'').includes('מזרחי')
+  ).length;
   const seasonEnt = entrance.filter(r => r['LFC_ID'] && r['LFC_ID'] !== '');
   const regularEnt = entrance.filter(r => !r['LFC_ID'] || r['LFC_ID'] === '');
   const awayEnt = entrance.filter(r => String(r['Turnstile']||'').startsWith('23'));
   const homeTicketEnt = regularEnt.filter(r => !String(r['Turnstile']||'').startsWith('23'));
 
   const totalEnt = entrance.length;
-  const seasonEntCount = seasonEnt.length;
+  const seasonEntCount = seasonEnt.length + seasonEntFromFile;
   const homeTicketEntCount = homeTicketEnt.length;
   const totalHomeEnt = seasonEntCount + homeTicketEntCount;
   const awayEntCount = awayEnt.length;
 
+  // כרטיסי כניסה = paid/free game tickets only
   const gameTickets = tickets.filter(r => String(r['ticketName']||'').includes('כרטיס כניסה'));
+  // Season ticket transfers (מנוי + origin=transfer) = season ticket entrances
+  const seasonTransfers = tickets.filter(r =>
+    String(r['origin']||'').toLowerCase() === 'transfer' &&
+    String(r['ticketName']||'').includes('מנוי') &&
+    !String(r['category']||'').includes('מזרחי')
+  );
   const homeTickets = gameTickets.filter(r => !String(r['category']||'').includes('מזרחי'));
   const awayTickets = gameTickets.filter(r => String(r['category']||'').includes('מזרחי'));
+  const homeFreeExtra = []; // no longer adding transfers to tickets
 
   const homePaid = homeTickets.filter(r => r['price'] > 0);
   const homeFree = homeTickets.filter(r => !r['price'] || r['price'] === 0);
+  const homeFreeTotal = homeFree.length + homeFreeExtra.length;
+  const homeTotalAll = homeTickets.length + homeFreeExtra.length;
   const awayPaid = awayTickets.filter(r => r['price'] > 0);
   const awayFree = awayTickets.filter(r => !r['price'] || r['price'] === 0);
 
@@ -203,19 +221,29 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     return { name: String(r['name']||'').trim(), category: String(r['category']||'').trim() };
   });
 
-  // Revenue from file
+  // Revenue from file (paid game tickets only)
   var revenueFromFile = 0;
   gameTickets.forEach(function(r) { if(r['price'] > 0) revenueFromFile += Number(r['price']||0); });
   revenueFromFile = Math.round(revenueFromFile);
+
+  var mHP=parseInt(document.getElementById('manualHomePaid').value)||null;
+  var mHF=parseInt(document.getElementById('manualHomeFree').value)||null;
+  var mAP=parseInt(document.getElementById('manualAwayPaid').value)||null;
+  var mAF=parseInt(document.getElementById('manualAwayFree').value)||null;
+  var fHP=mHP!==null?mHP:homePaid.length;
+  var fHF=mHF!==null?mHF:homeFree.length;
+  var fAP=mAP!==null?mAP:awayPaid.length;
+  var fAF=mAF!==null?mAF:awayFree.length;
 
   const game = {
     id: gameId, date, opponent,
     seasonEnt: seasonEntCount, homeTicketEnt: homeTicketEntCount,
     totalHomeEnt, awayEnt: awayEntCount, totalEnt,
-    homePaid: homePaid.length, homeFree: homeFree.length,
-    totalHomeTickets: homeTickets.length,
-    awayPaid: awayPaid.length, awayFree: awayFree.length,
-    totalTickets: gameTickets.length,
+    homePaid: fHP, homeFree: fHF,
+    homeFreeFromFile: homeFree.length,
+    totalHomeTickets: fHP+fHF,
+    awayPaid: fAP, awayFree: fAF,
+    totalTickets: fHP+fHF+fAP+fAF,
     revenueFromFile: revenueFromFile,
     revenueManual: null, fee: null, cashiers: null, vat: null,
     homeFreeList: homeFreeList
@@ -287,7 +315,7 @@ function renderTable() {
     '<td class="num total">' + g.totalEnt.toLocaleString() + '</td>' +
     '<td style="background:transparent;border:none;padding:0"></td>' +
     '<td class="num">' + g.homePaid.toLocaleString() + '</td>' +
-    '<td class="num free" style="cursor:pointer;text-decoration:underline dotted" onclick="showFreeList(' + i + ')">' + g.homeFree.toLocaleString() + '</td>' +
+    (function(){var ff=g.homeFreeFromFile!==undefined?g.homeFreeFromFile:g.homeFree;var diff=g.homeFree!==ff?' <span style="font-size:10px;color:var(--muted)">('+ff+' בקובץ)</span>':'';return '<td class="num free" style="cursor:pointer;text-decoration:underline dotted" onclick="showFreeList('+i+')">' + g.homeFree.toLocaleString() + diff + '</td>';})() +
     '<td class="num sub">' + g.totalHomeTickets.toLocaleString() + '</td>' +
     '<td class="num away">' + g.awayPaid.toLocaleString() + '</td>' +
     '<td class="num free away">' + g.awayFree.toLocaleString() + '</td>' +
