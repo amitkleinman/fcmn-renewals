@@ -30,8 +30,8 @@
   td.low{color:var(--danger)}
   td.med{color:var(--accent)}
   td.ok{color:var(--accent2)}
-  .pb{display:inline-block;height:6px;border-radius:3px;background:var(--border);width:80px;vertical-align:middle;margin-right:4px;overflow:hidden}
-  .pbf{height:100%;border-radius:3px;background:var(--accent2);transition:width 0.3s}
+  .pb{display:inline-block;height:8px;border-radius:4px;background:#2b3040;width:70px;vertical-align:middle;margin-right:6px;position:relative}
+  .pbf{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--accent2)}
   .pbf.low{background:var(--danger)}.pbf.med{background:var(--accent)}
   tr:hover td{background:#1c2030}
   .gh td{background:#1a2a1a;color:var(--accent);font-size:11px;font-weight:700;text-align:right;padding:6px 14px}
@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.0)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -88,9 +88,11 @@ const SEATS = {
 };
 
 const GROUPS = [
-  { label: 'מערבי תחתון', sections: ['101','102','103R','103L','104','105R','105L','105C'] },
-  { label: 'מערבי עליון',  sections: ['106','107','108','109'] },
-  { label: 'כבוד',         sections: ['201','202','203R','203L','204','205','206L','206R','207','208','209'] }
+  { label: 'מערבי תחתון הושבה (101-104)', sections: ['101','102','103R','103L','104'] },
+  { label: 'כסף (105)', sections: ['105R','105L','105C'] },
+  { label: 'מערבי תחתון ללא הושבה (106-109)', sections: ['106','107','108','109'] },
+  { label: 'מערבי עליון הושבה (201-206L)', sections: ['201','202','203R','203L','204','205','206L'] },
+  { label: 'מערבי עליון ללא הושבה (206R-209)', sections: ['206R','207','208','209'] }
 ];
 
 let seasonCounts = {};
