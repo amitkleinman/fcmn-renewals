@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>זמינות כרטיסים - מכבי נתניה</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f2330;--border:#2b3040;--text:#e8eaf0;--muted:#9aa3b5;--accent:#f5c518;--accent2:#2dd4a3;--danger:#ef5b5b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;min-height:100vh;padding:20px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  h1{font-size:20px;display:flex;align-items:center;gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .back-link{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--border);padding:6px 12px;border-radius:7px}
+  .controls{display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}
+  .ctrl-group{display:flex;flex-direction:column;gap:5px}
+  .ctrl-group label{font-size:12px;color:var(--muted)}
+  .ctrl-group input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;min-width:280px}
+  .btn{padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none;background:var(--accent);color:#14161c}
+  .summary-bar{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:20px;padding:12px 16px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+  .summary-bar b{color:var(--text)}
+  .status{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .live{color:var(--accent2)}
+  table{border-collapse:collapse;width:100%}
+  th,td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{background:var(--panel2);color:var(--muted);font-size:12px;font-weight:600}
+  td.sn{text-align:right;font-weight:600;color:var(--text)}
+  td.season{color:#6c9fd9}
+  td.game{color:var(--accent2)}
+  td.remain{font-weight:700}
+  td.low{color:var(--danger)}
+  td.med{color:var(--accent)}
+  td.ok{color:var(--accent2)}
+  .pb{display:inline-block;height:6px;border-radius:3px;background:var(--border);width:80px;vertical-align:middle;margin-right:4px;overflow:hidden}
+  .pbf{height:100%;border-radius:3px;background:var(--accent2);transition:width 0.3s}
+  .pbf.low{background:var(--danger)}.pbf.med{background:var(--accent)}
+  tr:hover td{background:#1c2030}
+  .gh td{background:#1a2a1a;color:var(--accent);font-size:11px;font-weight:700;text-align:right;padding:6px 14px}
+  tfoot td{background:var(--panel2);font-weight:700;border-top:2px solid var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.0)</span></h1>
+  <a href="index.html" class="back-link">← חזור לטרקר</a>
+</header>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <label>Event ID משחק (Vivenu) — אופציונלי</label>
+    <input type="text" id="eventId" placeholder="6a5cc8376d616cab8463a42c">
+  </div>
+  <button class="btn" id="loadBtn">טען משחק</button>
+  <span id="eventLabel" style="font-size:12px;color:var(--accent2)"></span>
+</div>
+
+<div class="status" id="statusEl">טוען...</div>
+<div class="summary-bar" id="summaryBar" style="display:none"></div>
+
+<div style="overflow-x:auto">
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:right">יציע</th>
+      <th>קיבולת</th>
+      <th style="color:#6c9fd9">מנויים</th>
+      <th style="color:var(--accent2)">כרטיסי משחק</th>
+      <th>תפוס</th>
+      <th>נותר</th>
+      <th>ניצול</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+  <tfoot id="tableFoot"></tfoot>
+</table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
+const db = firebase.firestore();
+
+const SEATS = {
+  '101':202,'102':389,'103L':258,'103R':68,'104':118,
+  '105C':289,'105L':190,'105R':190,'106':117,'107':324,
+  '108':389,'109':207,'201':220,'202':331,'203L':218,'203R':202,
+  '204':462,'205':238,'206L':256,'206R':182,'207':439,'208':332,'209':222
+};
+
+const GROUPS = [
+  { label: 'מערבי תחתון', sections: ['101','102','103R','103L','104','105R','105L','105C'] },
+  { label: 'מערבי עליון',  sections: ['106','107','108','109'] },
+  { label: 'כבוד',         sections: ['201','202','203R','203L','204','205','206L','206R','207','208','209'] }
+];
+
+let seasonCounts = {};
+let gameCounts = {};
+let seatUnsub = null;
+let gameUnsub = null;
+
+function loadSeason() {
+  if (seatUnsub) seatUnsub();
+  seatUnsub = db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
+    seasonCounts = {};
+    if (snap.exists) {
+      var data = snap.data();
+      Object.keys(data).forEach(function(key) {
+        var section = key.split('|')[0];
+        seasonCounts[section] = (seasonCounts[section] || 0) + 1;
+      });
+    }
+    render();
+    document.getElementById('statusEl').innerHTML = 'מנויים: עדכון חי <span class="live">●</span>';
+  });
+}
+
+function loadGame(eventId) {
+  if (gameUnsub) gameUnsub();
+  gameCounts = {};
+  if (!eventId) { render(); return; }
+  gameUnsub = db.collection('gameSeating').doc(eventId).onSnapshot(function(snap) {
+    gameCounts = snap.exists ? snap.data() : {};
+    render();
+    document.getElementById('eventLabel').textContent = 'עדכון חי ●';
+  });
+}
+
+function render() {
+  var tbody = document.getElementById('tableBody');
+  var tfoot = document.getElementById('tableFoot');
+  var summaryBar = document.getElementById('summaryBar');
+  var rows = '';
+  var totCap=0, totSeason=0, totGame=0;
+
+  GROUPS.forEach(function(group) {
+    rows += '<tr class="gh"><td colspan="7">' + group.label + '</td></tr>';
+    group.sections.forEach(function(s) {
+      var cap = SEATS[s] || 0;
+      var season = seasonCounts[s] || 0;
+      var game = gameCounts[s] || 0;
+      var taken = season + game;
+      var remain = cap - taken;
+      var pct = cap > 0 ? Math.round(taken/cap*100) : 0;
+      var cls = remain <= 20 ? 'low' : remain <= 50 ? 'med' : 'ok';
+      totCap+=cap; totSeason+=season; totGame+=game;
+      rows += '<tr>' +
+        '<td class="sn">' + s + '</td>' +
+        '<td style="color:var(--muted)">' + cap.toLocaleString() + '</td>' +
+        '<td class="season">' + season.toLocaleString() + '</td>' +
+        '<td class="game">' + (game > 0 ? game.toLocaleString() : '—') + '</td>' +
+        '<td>' + taken.toLocaleString() + '</td>' +
+        '<td class="remain ' + cls + '">' + remain.toLocaleString() + '</td>' +
+        '<td><span class="pb"><span class="pbf ' + cls + '" style="width:' + pct + '%"></span></span>' + pct + '%</td>' +
+        '</tr>';
+    });
+  });
+  tbody.innerHTML = rows;
+
+  var totTaken = totSeason + totGame;
+  var totRemain = totCap - totTaken;
+  var totPct = Math.round(totTaken/totCap*100);
+  tfoot.innerHTML = '<tr>' +
+    '<td style="text-align:right">סה"כ</td>' +
+    '<td>' + totCap.toLocaleString() + '</td>' +
+    '<td style="color:#6c9fd9">' + totSeason.toLocaleString() + '</td>' +
+    '<td style="color:var(--accent2)">' + (totGame > 0 ? totGame.toLocaleString() : '—') + '</td>' +
+    '<td>' + totTaken.toLocaleString() + '</td>' +
+    '<td style="color:var(--accent)">' + totRemain.toLocaleString() + '</td>' +
+    '<td>' + totPct + '%</td>' +
+    '</tr>';
+
+  summaryBar.style.display = 'flex';
+  summaryBar.innerHTML =
+    '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
+    '<span>מנויים: <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
+    (totGame > 0 ? '<span>כרטיסי משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
+    '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemain.toLocaleString() + '</b></span>' +
+    '<span>ניצול: <b>' + totPct + '%</b></span>';
+}
+
+document.getElementById('loadBtn').addEventListener('click', function() {
+  var eventId = document.getElementById('eventId').value.trim();
+  document.getElementById('eventLabel').textContent = eventId ? 'טוען...' : '';
+  loadGame(eventId);
+});
+
+loadSeason();
+</script>
+</body>
+</html>
