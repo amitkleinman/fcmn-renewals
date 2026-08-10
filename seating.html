@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.1)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.4)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -64,6 +64,8 @@
       <th>קיבולת</th>
       <th style="color:#6c9fd9">מנויים</th>
       <th style="color:var(--accent2)">כרטיסי משחק</th>
+      <th style="color:var(--muted)">נגיש ♿</th>
+      <th style="color:var(--accent)">שמור ✏️</th>
       <th>תפוס</th>
       <th>נותר</th>
       <th>ניצול</th>
@@ -79,6 +81,12 @@
 <script>
 firebase.initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
 const db = firebase.firestore();
+
+const ACCESSIBLE = {
+  '103L': 16
+};
+
+let savedCounts = {}; // loaded from Firestore meta/savedSeats, editable
 
 const SEATS = {
   '101':202,'102':389,'103L':258,'103R':68,'104':118,
@@ -99,6 +107,12 @@ let seasonCounts = {};
 let gameCounts = {};
 let seatUnsub = null;
 let gameUnsub = null;
+
+// Load saved seats from Firestore
+db.collection('meta').doc('savedSeats').onSnapshot(function(snap) {
+  savedCounts = snap.exists ? snap.data() : {};
+  render();
+});
 
 function loadSeason() {
   if (seatUnsub) seatUnsub();
@@ -135,39 +149,65 @@ function render() {
   var totCap=0, totSeason=0, totGame=0;
 
   GROUPS.forEach(function(group) {
-    rows += '<tr class="gh"><td colspan="7">' + group.label + '</td></tr>';
+    rows += '<tr class="gh"><td colspan="9">' + group.label + '</td></tr>';
+    var gCap=0,gSeason=0,gGame=0,gAcc=0,gSaved=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
+      var accessible = ACCESSIBLE[s] || 0;
+      var saved = savedCounts[s] || 0;
       var season = seasonCounts[s] || 0;
       var game = gameCounts[s] || 0;
       var taken = season + game;
-      var remain = cap - taken;
-      var pct = cap > 0 ? Math.round(taken/cap*100) : 0;
+      var remain = cap - taken - accessible - saved;
+      var pct = cap > 0 ? Math.round((taken + accessible + saved)/cap*100) : 0;
       var cls = remain <= 20 ? 'low' : remain <= 50 ? 'med' : 'ok';
       totCap+=cap; totSeason+=season; totGame+=game;
+      gCap+=cap; gSeason+=season; gGame+=game; gAcc+=accessible; gSaved+=saved;
       rows += '<tr>' +
         '<td class="sn">' + s + '</td>' +
         '<td style="color:var(--muted)">' + cap.toLocaleString() + '</td>' +
         '<td class="season">' + season.toLocaleString() + '</td>' +
         '<td class="game">' + (game > 0 ? game.toLocaleString() : '—') + '</td>' +
+        '<td style="color:var(--muted)">' + (accessible > 0 ? accessible : '—') + '</td>' +
+        '<td style="color:var(--accent);cursor:pointer" onclick="editSaved('' + s + '')" title="לחץ לעריכה">' + (saved > 0 ? saved : '—') + ' ✏️</td>' +
         '<td>' + taken.toLocaleString() + '</td>' +
         '<td class="remain ' + cls + '">' + remain.toLocaleString() + '</td>' +
         '<td><span class="pb"><span class="pbf ' + cls + '" style="width:' + pct + '%"></span></span>' + pct + '%</td>' +
         '</tr>';
     });
+    // Group subtotal row
+    var gTaken = gSeason+gGame;
+    var gRemain = gCap-gTaken-gAcc-gSaved;
+    var gPct = gCap>0?Math.round((gTaken+gAcc+gSaved)/gCap*100):0;
+    rows += '<tr style="background:#1c2030;font-size:12px;font-weight:600;border-top:1px solid var(--accent)">' +
+      '<td style="text-align:right;color:var(--accent)">סה"כ ' + group.label.split(' (')[0] + '</td>' +
+      '<td style="color:var(--muted)">' + gCap.toLocaleString() + '</td>' +
+      '<td style="color:#6c9fd9">' + gSeason.toLocaleString() + '</td>' +
+      '<td style="color:var(--accent2)">' + (gGame>0?gGame.toLocaleString():'—') + '</td>' +
+      '<td style="color:var(--muted)">' + (gAcc>0?gAcc:'—') + '</td>' +
+      '<td style="color:var(--accent)">' + (gSaved>0?gSaved:'—') + '</td>' +
+      '<td>' + gTaken.toLocaleString() + '</td>' +
+      '<td style="color:var(--accent);font-weight:700">' + gRemain.toLocaleString() + '</td>' +
+      '<td>' + gPct + '%</td>' +
+      '</tr>';
   });
   tbody.innerHTML = rows;
 
   var totTaken = totSeason + totGame;
   var totRemain = totCap - totTaken;
   var totPct = Math.round(totTaken/totCap*100);
+  var totAccessible = Object.values(ACCESSIBLE).reduce(function(a,b){return a+b;},0);
+  var totSaved = Object.values(savedCounts).reduce(function(a,b){return a+b;},0);
+  var totRemainFinal = totCap - totTaken - totAccessible - totSaved;
   tfoot.innerHTML = '<tr>' +
     '<td style="text-align:right">סה"כ</td>' +
     '<td>' + totCap.toLocaleString() + '</td>' +
     '<td style="color:#6c9fd9">' + totSeason.toLocaleString() + '</td>' +
     '<td style="color:var(--accent2)">' + (totGame > 0 ? totGame.toLocaleString() : '—') + '</td>' +
+    '<td style="color:var(--muted)">' + totAccessible + '</td>' +
+    '<td style="color:var(--accent)">' + totSaved + '</td>' +
     '<td>' + totTaken.toLocaleString() + '</td>' +
-    '<td style="color:var(--accent)">' + totRemain.toLocaleString() + '</td>' +
+    '<td style="color:var(--accent)">' + totRemainFinal.toLocaleString() + '</td>' +
     '<td>' + totPct + '%</td>' +
     '</tr>';
 
@@ -187,6 +227,18 @@ document.getElementById('loadBtn').addEventListener('click', function() {
 });
 
 loadSeason();
+
+function editSaved(section) {
+  var current = savedCounts[section] || 0;
+  var val = prompt('מושבים שמורים ליציע ' + section + ':', current);
+  if (val === null) return;
+  var num = parseInt(val) || 0;
+  var update = {};
+  update[section] = num;
+  db.collection('meta').doc('savedSeats').set(Object.assign({}, savedCounts, update))
+    .then(function() { console.log('Saved:', section, num); })
+    .catch(function(e) { alert('שגיאה: ' + e.message); });
+}
 </script>
 </body>
 </html>
