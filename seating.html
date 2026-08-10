@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.4)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.5)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -169,7 +169,7 @@ function render() {
         '<td class="season">' + season.toLocaleString() + '</td>' +
         '<td class="game">' + (game > 0 ? game.toLocaleString() : '—') + '</td>' +
         '<td style="color:var(--muted)">' + (accessible > 0 ? accessible : '—') + '</td>' +
-        '<td style="color:var(--accent);cursor:pointer" onclick="editSaved('' + s + '')" title="לחץ לעריכה">' + (saved > 0 ? saved : '—') + ' ✏️</td>' +
+        '<td style="color:var(--accent);cursor:pointer" onclick="editSaved(&quot;' + s + '&quot;)" title="לחץ לעריכה">' + (saved > 0 ? saved : '—') + ' ✏️</td>' +
         '<td>' + taken.toLocaleString() + '</td>' +
         '<td class="remain ' + cls + '">' + remain.toLocaleString() + '</td>' +
         '<td><span class="pb"><span class="pbf ' + cls + '" style="width:' + pct + '%"></span></span>' + pct + '%</td>' +
