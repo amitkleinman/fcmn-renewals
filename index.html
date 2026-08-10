@@ -231,7 +231,7 @@
 
 <header>
   <div style="display:flex; justify-content:space-between; align-items:flex-start">
-    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.2)</span></h1>
+    <h1><span class="dot"></span> מעקב חידוש מנויים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.3)</span></h1>
     <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; margin-top:4px">
       <div style="display:flex; gap:8px; align-items:center">
         <button id="priceBtn" style="font-size:11.5px; color:var(--muted); border:1px solid var(--border); padding:5px 10px; border-radius:7px; background:var(--panel2); cursor:pointer;">💰 מחירון</button>
@@ -465,7 +465,11 @@ function renderGroupTabs(grouped, sections){
     const seatsLabel = seatKnown ? `${seatTotal.toLocaleString()} מקומות · ` : '';
     const tab = document.createElement('div');
     tab.className = 'group-tab' + (g.id===activeGroup ? ' active':'');
-    tab.innerHTML = `<span>${g.label}</span><span class="count">${seatsLabel}${stats.total} מנויים · ${stats.renewed} חודשו (${stats.pct}%)</span>`;
+    // Count current season for all sections in this group
+    let groupCurCount = 0;
+    for(const gs of groupSections){ groupCurCount += currentSeasonCount(gs); }
+    const groupCurPct = seatTotal ? Math.round(groupCurCount/seatTotal*100) : 0;
+    tab.innerHTML = `<span>${g.label}</span><span class="count">${seatsLabel}${stats.total} מנויים · ${stats.renewed} חודשו (${stats.pct}%) | מנויים: ${groupCurCount} (${groupCurPct}% תפוס)</span>`;
     tab.addEventListener('click', ()=>{
       activeGroup = g.id;
       activeSection = null;
@@ -473,6 +477,15 @@ function renderGroupTabs(grouped, sections){
     });
     el.appendChild(tab);
   }
+}
+
+function currentSeasonCount(section) {
+  // Count seats in liveSeatStatus for this section
+  let count = 0;
+  for (const key of Object.keys(liveSeatStatus)) {
+    if (key.split('|')[0] === section) count++;
+  }
+  return count;
 }
 
 function renderTabs(grouped, sections){
@@ -486,7 +499,9 @@ function renderTabs(grouped, sections){
     const seatsLabel = sv != null ? `${sv} מקומות · ` : '';
     const tab = document.createElement('div');
     tab.className = 'tab' + (section===activeSection ? ' active':'');
-    tab.innerHTML = `<span>${escapeHtml(section)}</span><span class="count">${seatsLabel}${stats.total} מנויים</span><span class="pct">${stats.renewed} חודשו (${stats.pct}%)</span>`;
+    const curCount = currentSeasonCount(section);
+    const curPct = sv ? Math.round(curCount/sv*100) : 0;
+    tab.innerHTML = `<span>${escapeHtml(section)}</span><span class="count">${seatsLabel}${stats.total} מנויים</span><span class="pct">${stats.renewed} חודשו (${stats.pct}%) | מנויים: ${curCount} (${curPct}% תפוס)</span>`;
     tab.addEventListener('click', ()=>{
       activeSection = section;
       render();
