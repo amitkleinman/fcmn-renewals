@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.6)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.7)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -259,7 +259,7 @@ function render() {
   var totCap=0, totSeason=0, totGame=0;
 
   GROUPS.forEach(function(group) {
-    rows += '<tr class="gh"><td colspan="9">' + group.label + '</td></tr>';
+    rows += '<tr class="gh"><td colspan="11">' + group.label + '</td></tr>';
     var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
