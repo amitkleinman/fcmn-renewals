@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.1)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.4)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -50,6 +50,7 @@
     <input type="text" id="eventId" placeholder="6a5cc8376d616cab8463a42c">
   </div>
   <button class="btn" id="loadBtn">טען משחק</button>
+  <button class="btn" id="endGameBtn" style="background:var(--danger);color:#fff">סיים משחק ✕</button>
   <span id="eventLabel" style="font-size:12px;color:var(--accent2)"></span>
 </div>
 
@@ -123,6 +124,24 @@ let seasonCounts = {};
 let gameCounts = {};
 let seatUnsub = null;
 let gameUnsub = null;
+
+// Load active game from Firestore
+db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
+  var savedEventId = snap.exists ? (snap.data().eventId || '') : '';
+  var input = document.getElementById('eventId');
+  if (savedEventId && input.value !== savedEventId) {
+    input.value = savedEventId;
+    loadGame(savedEventId);
+    db.collection('gamesConfig').where('eventId','==',savedEventId).get().then(function(q) {
+      var name = savedEventId;
+      if (!q.empty) {
+        var d = q.docs[0].data();
+        name = (d.name || '') + (d.opponent ? ' נגד ' + d.opponent : '');
+      }
+      document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+    });
+  }
+});
 
 // Load saved seats from Firestore
 db.collection('meta').doc('savedSeats').onSnapshot(function(snap) {
@@ -319,8 +338,39 @@ function render() {
 
 document.getElementById('loadBtn').addEventListener('click', function() {
   var eventId = document.getElementById('eventId').value.trim();
-  document.getElementById('eventLabel').textContent = eventId ? 'טוען...' : '';
-  loadGame(eventId);
+  if (!eventId) return;
+  document.getElementById('eventLabel').textContent = 'שומר...';
+  db.collection('meta').doc('activeGame').set({ eventId: eventId })
+    .then(function() {
+      loadGame(eventId);
+    });
+  // Fetch game name from gamesConfig
+  db.collection('gamesConfig').doc(eventId).get().then(function(snap) {
+    var name = snap.exists ? ((snap.data().name || '') + (snap.data().opponent ? ' נגד ' + snap.data().opponent : '')) : eventId;
+    document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+  }).catch(function() {
+    // Try querying by eventId field
+    db.collection('gamesConfig').where('eventId','==',eventId).get().then(function(q) {
+      var name = eventId;
+      if (!q.empty) {
+        var d = q.docs[0].data();
+        name = (d.name || '') + (d.opponent ? ' נגד ' + d.opponent : '');
+      }
+      document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+    });
+  });
+});
+
+document.getElementById('endGameBtn').addEventListener('click', function() {
+  if (!confirm('לסיים את המשחק ולאפס את הספירה?')) return;
+  db.collection('meta').doc('activeGame').set({ eventId: '' })
+    .then(function() {
+      document.getElementById('eventId').value = '';
+      document.getElementById('eventLabel').textContent = '';
+      if (gameUnsub) { gameUnsub(); gameUnsub = null; }
+      gameCounts = {};
+      render();
+    });
 });
 
 loadSeason();
