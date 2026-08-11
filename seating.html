@@ -238,7 +238,7 @@ function render() {
 
   GROUPS.forEach(function(group) {
     rows += '<tr class="gh"><td colspan="9">' + group.label + '</td></tr>';
-    var gCap=0,gSeason=0,gGame=0,gAcc=0,gSaved=0;
+    var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
       var accessible = ACCESSIBLE[s] || 0;
