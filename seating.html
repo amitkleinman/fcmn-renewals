@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.8)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v1.9)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -55,6 +55,7 @@
 
 <div class="status" id="statusEl">טוען...</div>
 <div class="summary-bar" id="summaryBar" style="display:none"></div>
+<div class="summary-bar" id="totalsBar" style="display:none;border-top:1px solid var(--border);margin-top:-12px;border-radius:0 0 10px 10px;font-size:13px"></div>
 
 <div style="overflow-x:auto">
 <table>
@@ -81,6 +82,17 @@
 <script>
 firebase.initializeApp({apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",authDomain:"fcmn-renewals-26-27.firebaseapp.com",projectId:"fcmn-renewals-26-27",storageBucket:"fcmn-renewals-26-27.firebasestorage.app",messagingSenderId:"681981226078",appId:"1:681981226078:web:9db5a9aedee0c56193d8cf"});
 const db = firebase.firestore();
+
+const VIP_SECTIONS = new Set(['PLATINUM','R1','R2','R3','R4','R5','R6','R7','R8','R9','L1','L2','L3','L4','L5','L6','L7','L8','L9','BOX']);
+
+let kosherCount = 0;
+let vipCount = 0;
+
+// Load kosher from stats
+db.collection('meta').doc('stats').onSnapshot(function(snap) {
+  if (snap.exists) kosherCount = snap.data().kasherCount || 0;
+  renderTotalsBar();
+});
 
 const ACCESSIBLE = {
   '103L': 16,
@@ -115,18 +127,34 @@ db.collection('meta').doc('savedSeats').onSnapshot(function(snap) {
   render();
 });
 
+function renderTotalsBar() {
+  var bar = document.getElementById('totalsBar');
+  var regularSeason = Object.values(seasonCounts).reduce(function(a,b){return a+b;},0);
+  var total = regularSeason + vipCount + kosherCount;
+  bar.style.display = 'flex';
+  bar.innerHTML =
+    '<span>מנויים רגילים: <b style="color:#6c9fd9">' + regularSeason.toLocaleString() + '</b></span>' +
+    '<span>VIP/Platinum: <b style="color:#a78bfa">' + vipCount.toLocaleString() + '</b></span>' +
+    '<span>כשר: <b style="color:var(--accent2)">' + kosherCount.toLocaleString() + '</b></span>' +
+    '<span style="border-right:1px solid var(--border);padding-right:16px">סה"כ מנויים: <b style="color:var(--accent);font-size:15px">' + total.toLocaleString() + '</b></span>' +
+    '<span style="color:var(--muted);font-size:11px">← אמור להתאים לטרקר</span>';
+}
+
 function loadSeason() {
   if (seatUnsub) seatUnsub();
   seatUnsub = db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
     seasonCounts = {};
     if (snap.exists) {
       var data = snap.data();
+      vipCount = 0;
       Object.keys(data).forEach(function(key) {
         var section = key.split('|')[0];
+        if (VIP_SECTIONS.has(section)) { vipCount++; return; }
         seasonCounts[section] = (seasonCounts[section] || 0) + 1;
       });
     }
     render();
+    renderTotalsBar();
     document.getElementById('statusEl').innerHTML = 'מנויים: עדכון חי <span class="live">●</span>';
   });
 }
