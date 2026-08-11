@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.7)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.8)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -51,11 +51,11 @@
   </div>
   <button class="btn" id="loadBtn">טען משחק</button>
   <button class="btn" id="endGameBtn" style="background:var(--danger);color:#fff">סיים משחק ✕</button>
-  <span id="eventLabel" style="font-size:12px;color:var(--accent2)"></span>
+
 </div>
 
-<div class="status" id="statusEl">טוען...</div>
 <div class="status" id="gameStatusEl" style="color:var(--accent2)"></div>
+<div class="status" id="statusEl">טוען...</div>
 <div class="summary-bar" id="summaryBar" style="display:none"></div>
 <div class="summary-bar" id="totalsBar" style="display:none;border-top:1px solid var(--border);margin-top:-12px;border-radius:0 0 10px 10px;font-size:13px"></div>
 
@@ -247,7 +247,7 @@ function loadGame(eventId) {
   gameUnsub = db.collection('gameSeating').doc(eventId).onSnapshot(function(snap) {
     gameCounts = snap.exists ? snap.data() : {};
     render();
-    document.getElementById('eventLabel').textContent = 'עדכון חי ●';
+  
   });
 }
 
@@ -372,7 +372,7 @@ document.getElementById('endGameBtn').addEventListener('click', function() {
   db.collection('meta').doc('activeGame').set({ eventId: '' })
     .then(function() {
       document.getElementById('eventId').value = '';
-      document.getElementById('eventLabel').textContent = '';
+
       document.getElementById('gameStatusEl').innerHTML = '';
       if (gameUnsub) { gameUnsub(); gameUnsub = null; }
       gameCounts = {};
