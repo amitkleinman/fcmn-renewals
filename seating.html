@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v2.8)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -91,10 +91,14 @@ const VIP_SECTIONS = new Set(['PLATINUM','R1','R2','R3','R4','R5','R6','R7','R8'
 
 let kosherCount = 0;
 let vipCount = 0;
+let totalNewSeasonFromStats = 0;
 
-// Load kosher from stats
+// Load kosher and total from stats
 db.collection('meta').doc('stats').onSnapshot(function(snap) {
-  if (snap.exists) kosherCount = snap.data().kasherCount || 0;
+  if (snap.exists) {
+    kosherCount = snap.data().kasherCount || 0;
+    totalNewSeasonFromStats = snap.data().totalNewSeason || 0;
+  }
   renderTotalsBar();
 });
 
@@ -165,26 +169,36 @@ db.collection('meta').doc('savedSeats').onSnapshot(function(snap) {
 
 function renderTotalsBar() {
   var bar = document.getElementById('totalsBar');
-  var regularSeason = Object.values(seasonCounts).reduce(function(a,b){return a+b;},0);
-  var total = regularSeason + vipCount + kosherCount;
+  var vipFromStatus = vipCount;
+  var regularSeason = totalNewSeasonFromStats > 0 ? (totalNewSeasonFromStats - vipFromStatus) : Object.values(seasonCounts).reduce(function(a,b){return a+b;},0);
+  var total = (totalNewSeasonFromStats > 0 ? totalNewSeasonFromStats : (regularSeason + vipFromStatus)) + kosherCount;
   bar.style.display = 'flex';
   bar.innerHTML =
-    '<span>מנויים רגילים: <b style="color:#6c9fd9">' + regularSeason.toLocaleString() + '</b></span>' +
-    '<span>VIP/Platinum: <b style="color:#a78bfa">' + vipCount.toLocaleString() + '</b></span>' +
-    '<span>כשר: <b style="color:var(--accent2)">' + kosherCount.toLocaleString() + '</b></span>' +
-    '<span style="border-right:1px solid var(--border);padding-right:16px">סה"כ מנויים: <b style="color:var(--accent);font-size:15px">' + total.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + regularSeason.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">VIP/Platinum: <b style="color:#a78bfa">' + vipCount.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">כשר: <b style="color:var(--accent2)">' + kosherCount.toLocaleString() + '</b></span>' +
+    '<span style="border-right:1px solid var(--border);padding-right:16px;font-size:11px;color:var(--muted)">סה"כ מנויים: <b style="color:var(--accent);font-size:15px">' + total.toLocaleString() + '</b></span>' +
     '<span style="color:var(--muted);font-size:11px">← אמור להתאים לטרקר</span>';
 }
 
 function showGameFreeList(section) {
   var rawList = gameCounts[section + '_freeNames'];
   var list = [];
-  if (rawList && rawList.arrayValue) {
-    list = (rawList.arrayValue.values || []).map(function(v) {
-      var f = (v.mapValue && v.mapValue.fields) || {};
-      return { name: (f.name && f.name.stringValue) || '', email: (f.email && f.email.stringValue) || '' };
-    });
-  } else if (Array.isArray(rawList)) { list = rawList; }
+  if (rawList) {
+    if (rawList.arrayValue) {
+      // Firestore REST format
+      list = (rawList.arrayValue.values || []).map(function(v) {
+        var f = (v.mapValue && v.mapValue.fields) || {};
+        return { name: (f.name && f.name.stringValue) || '', email: (f.email && f.email.stringValue) || '' };
+      });
+    } else if (Array.isArray(rawList)) {
+      // Plain array (JS SDK format)
+      list = rawList;
+    } else if (typeof rawList === 'object') {
+      // Firebase compat SDK returns plain objects
+      list = Object.values(rawList).filter(function(v){ return v && typeof v === 'object' && v.name; });
+    }
+  }
   var count = gameCounts[section + '_free'] || 0;
   if (!count) return;
   var overlay = document.createElement('div');
@@ -331,11 +345,19 @@ function render() {
     '</tr>';
 
   summaryBar.style.display = 'flex';
+  var totGamePaid = 0, totGameFree = 0;
+  GROUPS.forEach(function(g) { g.sections.forEach(function(s) {
+    totGamePaid += gameCounts[s+'_paid']||0;
+    totGameFree += gameCounts[s+'_free']||0;
+  });});
+
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
-    '<span>מנויים: <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
-    (totGame > 0 ? '<span>כרטיסי משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
-    '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemain.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
+    (totGamePaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + totGamePaid.toLocaleString() + '</b></span>' : '') +
+    (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
+    (totGame > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
+    '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainFinal.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
 
