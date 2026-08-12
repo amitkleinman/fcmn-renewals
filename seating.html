@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.5)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.7)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -141,7 +141,7 @@ db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
         var d = q.docs[0].data();
         name = (d.name || '') + (d.opponent ? ' נגד ' + d.opponent : '');
       }
-      document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+      
       document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
     document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
     });
@@ -379,7 +379,7 @@ function render() {
 document.getElementById('loadBtn').addEventListener('click', function() {
   var eventId = document.getElementById('eventId').value.trim();
   if (!eventId) return;
-  document.getElementById('eventLabel').textContent = 'שומר...';
+  
   db.collection('meta').doc('activeGame').set({ eventId: eventId })
     .then(function() {
       loadGame(eventId);
@@ -387,7 +387,7 @@ document.getElementById('loadBtn').addEventListener('click', function() {
   // Fetch game name from gamesConfig
   db.collection('gamesConfig').doc(eventId).get().then(function(snap) {
     var name = snap.exists ? ((snap.data().name || '') + (snap.data().opponent ? ' נגד ' + snap.data().opponent : '')) : eventId;
-    document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+    
     document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
   }).catch(function() {
     // Try querying by eventId field
@@ -397,7 +397,7 @@ document.getElementById('loadBtn').addEventListener('click', function() {
         var d = q.docs[0].data();
         name = (d.name || '') + (d.opponent ? ' נגד ' + d.opponent : '');
       }
-      document.getElementById('eventLabel').textContent = name + ' — פעיל ●';
+      
       document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
     document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
     });
