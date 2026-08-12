@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.1)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.3)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -68,7 +68,7 @@
       <th style="color:#6c9fd9">מנויים</th>
       <th style="color:var(--accent2)">משחק בתשלום</th>
       <th style="color:#a78bfa">משחק חינם ✦</th>
-      <th style="color:var(--muted)">נגיש ♿</th>
+      <th style="color:var(--muted)">נגיש ♿ ✏️</th>
       <th style="color:var(--accent)">שמור ✏️</th>
       <th style="color:var(--muted)">הערה</th>
       <th>תפוס</th>
@@ -102,10 +102,8 @@ db.collection('meta').doc('stats').onSnapshot(function(snap) {
   renderTotalsBar();
 });
 
-const ACCESSIBLE = {
-  '103L': 16,
-  '107': 16
-};
+const ACCESSIBLE_DEFAULT = { '103L': 16, '107': 16 }; // fallback before Firestore loads
+let accessibleCounts = Object.assign({}, ACCESSIBLE_DEFAULT);
 
 let savedCounts = {}; // loaded from Firestore meta/savedSeats, editable
 let savedComments = {}; // section → comment string
@@ -148,6 +146,20 @@ db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
     document.getElementById('gameStatusEl').innerHTML = '<span style="color:var(--accent)">' + name + '</span> — עדכון חי <span class="live">●</span>';
     });
   }
+});
+
+// Load accessible seats from Firestore
+db.collection('meta').doc('accessibleSeats').onSnapshot(function(snap) {
+  if (snap.exists) {
+    accessibleCounts = {};
+    var data = snap.data();
+    Object.keys(data).forEach(function(key) {
+      accessibleCounts[key] = data[key];
+    });
+  } else {
+    accessibleCounts = Object.assign({}, ACCESSIBLE_DEFAULT);
+  }
+  render();
 });
 
 // Load saved seats from Firestore
@@ -270,14 +282,14 @@ function render() {
   var tfoot = document.getElementById('tableFoot');
   var summaryBar = document.getElementById('summaryBar');
   var rows = '';
-  var totCap=0, totSeason=0, totGame=0;
+  var totCap=0, totSeason=0, totGame=0, totGamePaid=0, totGameFree=0, totAcc=0, totSavedInGroups=0, totTakenAll=0, totRemainAll=0;
 
   GROUPS.forEach(function(group) {
     rows += '<tr class="gh"><td colspan="11">' + group.label + '</td></tr>';
     var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
-      var accessible = ACCESSIBLE[s] || 0;
+      var accessible = accessibleCounts[s] || 0;
       var saved = savedCounts[s] || 0;
       var season = seasonCounts[s] || 0;
       var gamePaid = gameCounts[s + '_paid'] || 0;
@@ -287,7 +299,9 @@ function render() {
       var remain = cap - taken - accessible - saved;
       var pct = cap > 0 ? Math.round((taken + accessible + saved)/cap*100) : 0;
       var cls = remain <= 20 ? 'low' : remain <= 50 ? 'med' : 'ok';
-      totCap+=cap; totSeason+=season; totGame+=game;
+      totCap+=cap; totSeason+=season; totGame+=game; totGamePaid+=gamePaid; totGameFree+=gameFree;
+      totAcc+=accessible; totSavedInGroups+=saved;
+      totTakenAll+=(season+game); totRemainAll+=remain;
       gCap+=cap; gSeason+=season; gGamePaid+=gamePaid; gGameFree+=gameFree; gGame+=game; gAcc+=accessible; gSaved+=saved;
       rows += '<tr>' +
         '<td class="sn">' + s + '</td>' +
@@ -295,7 +309,7 @@ function render() {
         '<td class="season">' + season.toLocaleString() + '</td>' +
         '<td class="game">' + (gamePaid > 0 ? gamePaid.toLocaleString() : '—') + '</td>' +
         '<td style="color:#a78bfa;cursor:pointer" onclick="showGameFreeList(&quot;' + s + '&quot;)">' + (gameFree > 0 ? gameFree.toLocaleString() + ' ✦' : '—') + '</td>' +
-        '<td style="color:var(--muted)">' + (accessible > 0 ? accessible : '—') + '</td>' +
+        '<td style="color:var(--muted);cursor:pointer" onclick="editAccessible(&quot;' + s + '&quot;)" title="לחץ לעריכה">' + (accessible > 0 ? accessible : '— ✏️') + '</td>' +
         '<td style="color:var(--accent);cursor:pointer" onclick="editSaved(&quot;' + s + '&quot;)" title="' + (savedComments[s] ? savedComments[s] : 'לחץ לעריכה') + '">' + (saved > 0 ? saved : '—') + ' ✏️</td>' +
         '<td style="color:var(--muted);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis" title="' + (savedComments[s]||'') + '">' + (savedComments[s] ? savedComments[s] : '—') + '</td>' +
         '<td>' + taken.toLocaleString() + '</td>' +
@@ -324,20 +338,17 @@ function render() {
   });
   tbody.innerHTML = rows;
 
-  var totTaken = totSeason + totGame;
-  var totRemain = totCap - totTaken;
-  var totPct = Math.round(totTaken/totCap*100);
-  var totAccessible = Object.values(ACCESSIBLE).reduce(function(a,b){return a+b;},0);
-  var totSaved = Object.values(savedCounts).reduce(function(a,b){return a+b;},0);
-  var totRemainFinal = totCap - totTaken - totAccessible - totSaved;
+  var totTaken = totTakenAll;
+  var totPct = Math.round((totTaken + totAcc + totSavedInGroups)/totCap*100);
+  var totRemainFinal = totRemainAll;
   tfoot.innerHTML = '<tr>' +
     '<td style="text-align:right">סה"כ</td>' +
     '<td>' + totCap.toLocaleString() + '</td>' +
     '<td style="color:#6c9fd9">' + totSeason.toLocaleString() + '</td>' +
-    '<td style="color:var(--accent2)">—</td>' +
-    '<td style="color:#a78bfa">—</td>' +
-    '<td style="color:var(--muted)">' + totAccessible + '</td>' +
-    '<td style="color:var(--accent)">' + totSaved + '</td>' +
+    '<td style="color:var(--accent2)">' + (totGamePaid>0?totGamePaid.toLocaleString():'—') + '</td>' +
+    '<td style="color:#a78bfa">' + (totGameFree>0?totGameFree.toLocaleString():'—') + '</td>' +
+    '<td style="color:var(--muted)">' + totAcc + '</td>' +
+    '<td style="color:var(--accent)">' + totSavedInGroups + '</td>' +
     '<td></td>' +
     '<td>' + totTaken.toLocaleString() + '</td>' +
     '<td style="color:var(--accent)">' + totRemainFinal.toLocaleString() + '</td>' +
@@ -345,11 +356,7 @@ function render() {
     '</tr>';
 
   summaryBar.style.display = 'flex';
-  var totGamePaid = 0, totGameFree = 0;
-  GROUPS.forEach(function(g) { g.sections.forEach(function(s) {
-    totGamePaid += gameCounts[s+'_paid']||0;
-    totGameFree += gameCounts[s+'_free']||0;
-  });});
+  // totGamePaid and totGameFree already computed in render loop
 
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
@@ -357,7 +364,7 @@ function render() {
     (totGamePaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + totGamePaid.toLocaleString() + '</b></span>' : '') +
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
     (totGame > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
-    '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainFinal.toLocaleString() + '</b></span>' +
+    '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
 
@@ -403,6 +410,31 @@ document.getElementById('endGameBtn').addEventListener('click', function() {
 });
 
 loadSeason();
+
+function editAccessible(section) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0009;z-index:1000;display:flex;align-items:center;justify-content:center';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;min-width:280px;direction:rtl';
+  box.innerHTML = '<b style="font-size:15px;display:block;margin-bottom:16px">יציע ' + section + ' — מושבים נגישים</b>' +
+    '<label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">מספר מושבים נגישים ♿</label>' +
+    '<input id="accNum" type="number" value="' + (accessibleCounts[section]||0) + '" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;margin-bottom:14px">' +
+    '<div style="display:flex;gap:8px">' +
+    '<button id="saveAccBtn" style="flex:1;padding:9px;background:var(--accent);color:#14161c;border:none;border-radius:8px;cursor:pointer;font-weight:700">שמור</button>' +
+    '<button id="cancelAccBtn" style="flex:1;padding:9px;background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer">ביטול</button>' +
+    '</div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+  box.querySelector('#cancelAccBtn').onclick = function() { overlay.remove(); };
+  box.querySelector('#saveAccBtn').onclick = function() {
+    var num = parseInt(box.querySelector('#accNum').value) || 0;
+    var update = Object.assign({}, accessibleCounts);
+    update[section] = num;
+    db.collection('meta').doc('accessibleSeats').set(update)
+      .then(function() { overlay.remove(); })
+      .catch(function(e) { alert('שגיאה: ' + e.message); });
+  };
+}
 
 function editSaved(section) {
   var overlay = document.createElement('div');
