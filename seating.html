@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.3)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.4)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -358,12 +358,18 @@ function render() {
   summaryBar.style.display = 'flex';
   // totGamePaid and totGameFree already computed in render loop
 
+  // VIP free tickets from gameSeating
+  var VIP_SECS = ['PLATINUM','R1','R2','R3','R4','R5','R6','L1','L2','L3','L4','L5','L6','BOX'];
+  var vipFreeGame = 0;
+  VIP_SECS.forEach(function(s) { vipFreeGame += gameCounts[s+'_free']||0; });
+
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
     '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
     (totGamePaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + totGamePaid.toLocaleString() + '</b></span>' : '') +
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
     (totGame > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
+    (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
