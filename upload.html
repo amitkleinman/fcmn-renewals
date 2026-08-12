@@ -94,7 +94,7 @@
 
 <div class="log" id="log"></div>
 <a href="index.html" class="tracker-link" id="trackerLink">← עבור לטרקר המנויים</a>
-<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 2.1 · 02/08/2026</div>
+<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">גרסה 2.2 · 12/08/2026</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -296,6 +296,36 @@ processBtn.addEventListener('click', async ()=>{
     const totalRevenue=westernLowerRevenue+westernUpperRevenue+honorRevenue+mongashRevenue;
     addLogG(`מונגש: ${mongash} | מערבי תחתון: ${westernLower} (₪${westernLowerRevenue.toLocaleString()}) | מערבי עליון: ${westernUpper} (₪${westernUpperRevenue.toLocaleString()}) | כבוד: ${honor} | הזמנות: ${ordersList.length} | סה"כ: ${total} | ₪${totalRevenue.toLocaleString()}`);
     await setDoc(doc(db,'games',gameId),{westernLower,westernUpper,honor,mongash,total,ordersCount:ordersList.length,ordersList,westernLowerRevenue,westernUpperRevenue,honorRevenue,mongashRevenue,totalRevenue,updatedAt:new Date().toISOString()});
+
+    // Also write to gameSeating with paid/free per section (for seating page)
+    const gameSeating = {};
+    const freeNames = {};
+    for(const row of parsedData){
+      const sec = String(row['seat.section']||row['sectionName']||'').trim();
+      if(!sec || String(row['category']||'').includes('מזרחי')) continue;
+      const origin = String(row['origin']||'').toLowerCase();
+      const tName = String(row['ticketName']||'');
+      if(origin === 'transfer' || tName.includes('מנוי')) continue;
+      const price = Number(row['price']||0);
+      const name = String(row['name']||'').trim();
+      const email = String(row['email']||'').trim();
+      if(price > 0){
+        gameSeating[sec+'_paid'] = (gameSeating[sec+'_paid']||0) + 1;
+      } else {
+        gameSeating[sec+'_free'] = (gameSeating[sec+'_free']||0) + 1;
+        if(!freeNames[sec]) freeNames[sec] = [];
+        freeNames[sec].push({name, email});
+      }
+    }
+    // Add free names arrays
+    for(const [sec, names] of Object.entries(freeNames)){
+      gameSeating[sec+'_freeNames'] = names;
+    }
+    if(Object.keys(gameSeating).length > 0){
+      await setDoc(doc(db,'gameSeating',gameId), gameSeating);
+      addLogG(`✓ עודכן gameSeating: ${Object.keys(gameSeating).filter(k=>k.endsWith('_paid')).length} יציעים בתשלום`, 'ok');
+    }
+
     addLogG('✓ נשמר בהצלחה','ok');
     processBtn.textContent='הושלם ✓';
     trackerLink.style.display='inline-block';
