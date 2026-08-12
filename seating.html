@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.4)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.5)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -370,6 +370,8 @@ function render() {
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
     (totGame > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
+    '<span>סה"כ (ללא VIP): <b style="color:var(--accent2)">' + (totGame + totSeason).toLocaleString() + '</b></span>' +
+    (vipFreeGame > 0 ? '<span>סה"כ (כולל VIP): <b style="color:var(--accent)">' + (totGame + totSeason + vipFreeGame).toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
