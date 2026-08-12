@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.7)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.8)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -296,7 +296,7 @@ function render() {
       var gameFree = gameCounts[s + '_free'] || 0;
       var game = gamePaid + gameFree;
       var taken = season + game;
-      var remain = cap - taken - accessible - saved;
+      var remain = Math.max(0, cap - taken - accessible - saved);
       var pct = cap > 0 ? Math.round((taken + accessible + saved)/cap*100) : 0;
       var cls = remain <= 20 ? 'low' : remain <= 50 ? 'med' : 'ok';
       totCap+=cap; totSeason+=season; totGame+=game; totGamePaid+=gamePaid; totGameFree+=gameFree;
