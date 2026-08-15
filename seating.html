@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.5)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.6)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -273,15 +273,19 @@ function showGameFreeList(section) {
 function showHeldList(section) {
   var rawList = gameCounts[section + '_heldNames'];
   var list = [];
-  if (rawList && rawList.arrayValue) {
-    list = (rawList.arrayValue.values || []).map(function(v) {
-      var f = (v.mapValue && v.mapValue.fields) || {};
-      return {
-        name: (f.name && f.name.stringValue) || '',
-        email: (f.email && f.email.stringValue) || '',
-        amount: parseInt((f.amount && f.amount.integerValue) || 1)
-      };
-    });
+  if (rawList) {
+    if (Array.isArray(rawList)) {
+      list = rawList;
+    } else if (rawList.arrayValue) {
+      list = (rawList.arrayValue.values || []).map(function(v) {
+        var f = (v.mapValue && v.mapValue.fields) || {};
+        return {
+          name: (f.name && f.name.stringValue) || '',
+          email: (f.email && f.email.stringValue) || '',
+          amount: parseInt((f.amount && f.amount.integerValue) || 1)
+        };
+      });
+    }
   }
   var count = gameCounts[section + '_held'] || 0;
   if (!count) return;
