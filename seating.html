@@ -36,11 +36,18 @@
   tr:hover td{background:#1c2030}
   .gh td{background:#1a2a1a;color:var(--accent);font-size:11px;font-weight:700;text-align:right;padding:6px 14px}
   tfoot td{background:var(--panel2);font-weight:700;border-top:2px solid var(--accent)}
+  .sum-table{width:100%;border-collapse:collapse;margin-bottom:20px}
+  .sum-table th,.sum-table td{padding:8px 12px;text-align:center;border-bottom:1px solid var(--border);font-size:13px}
+  .sum-table th{background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600}
+  .sum-table th:first-child,.sum-table td:first-child{text-align:right}
+  .sum-table td:first-child{font-weight:600;font-size:12px}
+  .sum-table tr:hover td{background:#1c2030}
+  .sum-table tfoot td{background:var(--panel2);font-weight:700;border-top:2px solid var(--accent)}
 </style>
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.0)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -59,6 +66,19 @@
 <div class="summary-bar" id="summaryBar" style="display:none"></div>
 <div class="summary-bar" id="totalsBar" style="display:none;border-top:1px solid var(--border);margin-top:-12px;border-radius:0 0 10px 10px;font-size:13px"></div>
 
+<div id="sumWrap" style="margin-bottom:20px;display:none;overflow-x:auto">
+<table class="sum-table">
+  <thead><tr>
+    <th>אזור</th><th>קיבולת</th>
+    <th style="color:#6c9fd9">מנויים</th>
+    <th style="color:var(--accent2)">נמכרו</th>
+    <th style="color:#a78bfa">חינם</th>
+    <th>תפוס</th><th>נותר</th><th>ניצול</th>
+  </tr></thead>
+  <tbody id="sumBody"></tbody>
+  <tfoot id="sumFoot"></tfoot>
+</table>
+</div>
 <div style="overflow-x:auto">
 <table>
   <thead>
@@ -282,6 +302,7 @@ function render() {
   var tfoot = document.getElementById('tableFoot');
   var summaryBar = document.getElementById('summaryBar');
   var rows = '';
+  var groupSumData = [];
   var totCap=0, totSeason=0, totGame=0, totGamePaid=0, totGameFree=0, totAcc=0, totSavedInGroups=0, totTakenAll=0, totRemainAll=0;
 
   GROUPS.forEach(function(group) {
@@ -320,6 +341,7 @@ function render() {
     // Group subtotal row
     var gTaken = gSeason+gGame;
     var gRemain = gRemainSum;
+    groupSumData.push({label:group.label.split(' (')[0],cap:gCap,season:gSeason,paid:gGamePaid,free:gGameFree,taken:gTaken,remain:gRemain});
     var gPct = gCap>0?Math.round((gTaken+gAcc+gSaved)/gCap*100):0;
     var gCls = gRemain <= 20 ? 'low' : gRemain <= 50 ? 'med' : 'ok';
     rows += '<tr style="background:#1c2030;font-size:12px;font-weight:600;border-top:1px solid var(--accent)">' +
@@ -341,6 +363,21 @@ function render() {
   var totTaken = totTakenAll;
   var totPct = Math.round((totTaken + totAcc + totSavedInGroups)/totCap*100);
   var totRemainFinal = totRemainAll;
+
+  // Render group summary table
+  var sumWrap = document.getElementById('sumWrap');
+  var sumBody = document.getElementById('sumBody');
+  var sumFoot = document.getElementById('sumFoot');
+  var sTotCap=0,sTotSeason=0,sTotPaid=0,sTotFree=0,sTotTaken=0,sTotRemain=0;
+  sumBody.innerHTML = groupSumData.map(function(g) {
+    sTotCap+=g.cap; sTotSeason+=g.season; sTotPaid+=g.paid; sTotFree+=g.free; sTotTaken+=g.taken; sTotRemain+=g.remain;
+    var pct=g.cap>0?Math.round(g.taken/g.cap*100):0;
+    var cls=g.remain<=20?'low':g.remain<=50?'med':'ok';
+    return '<tr><td>'+g.label+'</td><td style="color:var(--muted)">'+g.cap.toLocaleString()+'</td><td style="color:#6c9fd9">'+g.season.toLocaleString()+'</td><td style="color:var(--accent2)">'+g.paid.toLocaleString()+'</td><td style="color:#a78bfa">'+g.free.toLocaleString()+'</td><td>'+g.taken.toLocaleString()+'</td><td class="remain '+cls+'" style="font-weight:700">'+g.remain.toLocaleString()+'</td><td><span class="pb"><span class="pbf '+cls+'" style="width:'+pct+'%"></span></span>'+pct+'%</td></tr>';
+  }).join('');
+  var sPct=sTotCap>0?Math.round(sTotTaken/sTotCap*100):0;
+  sumFoot.innerHTML='<tr><td style="color:var(--accent)">סה"כ</td><td>'+sTotCap.toLocaleString()+'</td><td style="color:#6c9fd9">'+sTotSeason.toLocaleString()+'</td><td style="color:var(--accent2)">'+sTotPaid.toLocaleString()+'</td><td style="color:#a78bfa">'+sTotFree.toLocaleString()+'</td><td>'+sTotTaken.toLocaleString()+'</td><td style="color:var(--accent);font-weight:700">'+sTotRemain.toLocaleString()+'</td><td><span class="pb"><span class="pbf" style="width:'+sPct+'%;background:var(--accent2)"></span></span>'+sPct+'%</td></tr>';
+  sumWrap.style.display = groupSumData.length ? 'block' : 'none';
   tfoot.innerHTML = '<tr>' +
     '<td style="text-align:right">סה"כ</td>' +
     '<td>' + totCap.toLocaleString() + '</td>' +
