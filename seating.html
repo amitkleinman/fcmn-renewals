@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.8)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.9)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -319,7 +319,7 @@ function render() {
     });
     // Group subtotal row
     var gTaken = gSeason+gGame;
-    var gRemain = gCap-gTaken-gAcc-gSaved;
+    var gRemain = Math.max(0, gCap-gTaken-gAcc-gSaved);
     var gPct = gCap>0?Math.round((gTaken+gAcc+gSaved)/gCap*100):0;
     var gCls = gRemain <= 20 ? 'low' : gRemain <= 50 ? 'med' : 'ok';
     rows += '<tr style="background:#1c2030;font-size:12px;font-weight:600;border-top:1px solid var(--accent)">' +
