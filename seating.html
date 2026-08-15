@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.9)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.0)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -286,7 +286,7 @@ function render() {
 
   GROUPS.forEach(function(group) {
     rows += '<tr class="gh"><td colspan="11">' + group.label + '</td></tr>';
-    var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0;
+    var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0,gRemainSum=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
       var accessible = accessibleCounts[s] || 0;
@@ -302,7 +302,7 @@ function render() {
       totCap+=cap; totSeason+=season; totGame+=game; totGamePaid+=gamePaid; totGameFree+=gameFree;
       totAcc+=accessible; totSavedInGroups+=saved;
       totTakenAll+=(season+game); totRemainAll+=remain;
-      gCap+=cap; gSeason+=season; gGamePaid+=gamePaid; gGameFree+=gameFree; gGame+=game; gAcc+=accessible; gSaved+=saved;
+      gCap+=cap; gSeason+=season; gGamePaid+=gamePaid; gGameFree+=gameFree; gGame+=game; gAcc+=accessible; gSaved+=saved; gRemainSum+=remain;
       rows += '<tr>' +
         '<td class="sn">' + s + '</td>' +
         '<td style="color:var(--muted)">' + cap.toLocaleString() + '</td>' +
@@ -319,7 +319,7 @@ function render() {
     });
     // Group subtotal row
     var gTaken = gSeason+gGame;
-    var gRemain = Math.max(0, gCap-gTaken-gAcc-gSaved);
+    var gRemain = gRemainSum;
     var gPct = gCap>0?Math.round((gTaken+gAcc+gSaved)/gCap*100):0;
     var gCls = gRemain <= 20 ? 'low' : gRemain <= 50 ? 'med' : 'ok';
     rows += '<tr style="background:#1c2030;font-size:12px;font-weight:600;border-top:1px solid var(--accent)">' +
