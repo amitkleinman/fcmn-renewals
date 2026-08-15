@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.1)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.2)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -72,6 +72,7 @@
     <th>אזור</th><th>קיבולת</th>
     <th style="color:#6c9fd9">מנויים</th>
     <th style="color:var(--accent2)">נמכרו</th>
+    <th style="color:#fb923c">🛒 ממתינים</th>
     <th style="color:#a78bfa">חינם</th>
     <th>תפוס</th><th>נותר</th><th>ניצול</th>
   </tr></thead>
@@ -87,6 +88,7 @@
       <th>קיבולת</th>
       <th style="color:#6c9fd9">מנויים</th>
       <th style="color:var(--accent2)">משחק בתשלום</th>
+      <th style="color:#fb923c">בקשת רכישה 🛒</th>
       <th style="color:#a78bfa">משחק חינם ✦</th>
       <th style="color:var(--muted)">נגיש ♿ ✏️</th>
       <th style="color:var(--accent)">שמור ✏️</th>
@@ -306,7 +308,7 @@ function render() {
   var totCap=0, totSeason=0, totGame=0, totGamePaid=0, totGameFree=0, totAcc=0, totSavedInGroups=0, totTakenAll=0, totRemainAll=0;
 
   GROUPS.forEach(function(group) {
-    rows += '<tr class="gh"><td colspan="11">' + group.label + '</td></tr>';
+    rows += '<tr class="gh"><td colspan="12">' + group.label + '</td></tr>';
     var gCap=0,gSeason=0,gGame=0,gGamePaid=0,gGameFree=0,gAcc=0,gSaved=0,gRemainSum=0;
     group.sections.forEach(function(s) {
       var cap = SEATS[s] || 0;
@@ -315,7 +317,8 @@ function render() {
       var season = seasonCounts[s] || 0;
       var gamePaid = gameCounts[s + '_paid'] || 0;
       var gameFree = gameCounts[s + '_free'] || 0;
-      var game = gamePaid + gameFree;
+      var gameHeld = gameCounts[s + '_held'] || 0;
+      var game = gamePaid + gameFree + gameHeld;
       var taken = season + game;
       var remain = Math.max(0, cap - taken - accessible - saved);
       var pct = cap > 0 ? Math.round((taken + accessible + saved)/cap*100) : 0;
@@ -323,12 +326,13 @@ function render() {
       totCap+=cap; totSeason+=season; totGame+=game; totGamePaid+=gamePaid; totGameFree+=gameFree;
       totAcc+=accessible; totSavedInGroups+=saved;
       totTakenAll+=(season+game); totRemainAll+=remain;
-      gCap+=cap; gSeason+=season; gGamePaid+=gamePaid; gGameFree+=gameFree; gGame+=game; gAcc+=accessible; gSaved+=saved; gRemainSum+=remain;
+      gCap+=cap; gSeason+=season; gGamePaid+=gamePaid; gGameFree+=gameFree; gGameHeld+=gameHeld; gGame+=game; gAcc+=accessible; gSaved+=saved; gRemainSum+=remain;
       rows += '<tr>' +
         '<td class="sn">' + s + '</td>' +
         '<td style="color:var(--muted)">' + cap.toLocaleString() + '</td>' +
         '<td class="season">' + season.toLocaleString() + '</td>' +
         '<td class="game">' + (gamePaid > 0 ? gamePaid.toLocaleString() : '—') + '</td>' +
+        '<td style="color:#fb923c">' + (gameHeld > 0 ? gameHeld.toLocaleString() + ' 🛒' : '—') + '</td>' +
         '<td style="color:#a78bfa;cursor:pointer" onclick="showGameFreeList(&quot;' + s + '&quot;)">' + (gameFree > 0 ? gameFree.toLocaleString() + ' ✦' : '—') + '</td>' +
         '<td style="color:var(--muted);cursor:pointer" onclick="editAccessible(&quot;' + s + '&quot;)" title="לחץ לעריכה">' + (accessible > 0 ? accessible : '— ✏️') + '</td>' +
         '<td style="color:var(--accent);cursor:pointer" onclick="editSaved(&quot;' + s + '&quot;)" title="' + (savedComments[s] ? savedComments[s] : 'לחץ לעריכה') + '">' + (saved > 0 ? saved : '—') + ' ✏️</td>' +
@@ -349,6 +353,7 @@ function render() {
       '<td style="color:var(--muted)">' + gCap.toLocaleString() + '</td>' +
       '<td style="color:#6c9fd9">' + gSeason.toLocaleString() + '</td>' +
       '<td style="color:var(--accent2)">' + (gGamePaid>0?gGamePaid.toLocaleString():'—') + '</td>' +
+      '<td style="color:#fb923c">' + (gGameHeld>0?gGameHeld.toLocaleString()+' 🛒':'—') + '</td>' +
       '<td style="color:#a78bfa">' + (gGameFree>0?gGameFree.toLocaleString():'—') + '</td>' +
       '<td style="color:var(--muted)">' + (gAcc>0?gAcc:'—') + '</td>' +
       '<td style="color:var(--accent)">' + (gSaved>0?gSaved:'—') + '</td>' +
@@ -383,6 +388,7 @@ function render() {
     '<td>' + totCap.toLocaleString() + '</td>' +
     '<td style="color:#6c9fd9">' + totSeason.toLocaleString() + '</td>' +
     '<td style="color:var(--accent2)">' + (totGamePaid>0?totGamePaid.toLocaleString():'—') + '</td>' +
+    '<td style="color:#fb923c">—</td>' +
     '<td style="color:#a78bfa">' + (totGameFree>0?totGameFree.toLocaleString():'—') + '</td>' +
     '<td style="color:var(--muted)">' + totAcc + '</td>' +
     '<td style="color:var(--accent)">' + totSavedInGroups + '</td>' +
