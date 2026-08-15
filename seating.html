@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.4)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.5)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -72,7 +72,8 @@
     <th>אזור</th><th>קיבולת</th>
     <th style="color:#6c9fd9">מנויים</th>
     <th style="color:var(--accent2)">נמכרו</th>
-    <th style="color:#fb923c">🛒 ממתינים</th>
+    <th style="color:#a78bfa">חינם</th>
+    <th style="color:#fb923c">🛒 בקשת רכישה</th>
     <th style="color:#a78bfa">חינם</th>
     <th>תפוס</th><th>נותר</th><th>ניצול</th>
   </tr></thead>
@@ -398,7 +399,7 @@ function render() {
     // Group subtotal row
     var gTaken = gSeason+gGame;
     var gRemain = gRemainSum;
-    groupSumData.push({label:group.label.split(' (')[0],cap:gCap,season:gSeason,paid:gGamePaid,free:gGameFree,taken:gTaken,remain:gRemain});
+    groupSumData.push({label:group.label.split(' (')[0],cap:gCap,season:gSeason,paid:gGamePaid,free:gGameFree,held:gGameHeld,taken:gTaken,remain:gRemain});
     var gPct = gCap>0?Math.round((gTaken+gAcc+gSaved)/gCap*100):0;
     var gCls = gRemain <= 20 ? 'low' : gRemain <= 50 ? 'med' : 'ok';
     rows += '<tr style="background:#1c2030;font-size:12px;font-weight:600;border-top:1px solid var(--accent)">' +
@@ -431,10 +432,11 @@ function render() {
     sTotCap+=g.cap; sTotSeason+=g.season; sTotPaid+=g.paid; sTotFree+=g.free; sTotTaken+=g.taken; sTotRemain+=g.remain;
     var pct=g.cap>0?Math.round(g.taken/g.cap*100):0;
     var cls=g.remain<=20?'low':g.remain<=50?'med':'ok';
-    return '<tr><td>'+g.label+'</td><td style="color:var(--muted)">'+g.cap.toLocaleString()+'</td><td style="color:#6c9fd9">'+g.season.toLocaleString()+'</td><td style="color:var(--accent2)">'+g.paid.toLocaleString()+'</td><td style="color:#a78bfa">'+g.free.toLocaleString()+'</td><td>'+g.taken.toLocaleString()+'</td><td class="remain '+cls+'" style="font-weight:700">'+g.remain.toLocaleString()+'</td><td><span class="pb"><span class="pbf '+cls+'" style="width:'+pct+'%"></span></span>'+pct+'%</td></tr>';
+    return '<tr><td>'+g.label+'</td><td style="color:var(--muted)">'+g.cap.toLocaleString()+'</td><td style="color:#6c9fd9">'+g.season.toLocaleString()+'</td><td style="color:var(--accent2)">'+g.paid.toLocaleString()+'</td><td style="color:#a78bfa">'+g.free.toLocaleString()+'</td><td style="color:#fb923c">'+(g.held>0?g.held.toLocaleString()+' 🛒':'—')+'</td><td>'+g.taken.toLocaleString()+'</td><td class="remain '+cls+'" style="font-weight:700">'+g.remain.toLocaleString()+'</td><td><span class="pb"><span class="pbf '+cls+'" style="width:'+pct+'%"></span></span>'+pct+'%</td></tr>';
   }).join('');
   var sPct=sTotCap>0?Math.round(sTotTaken/sTotCap*100):0;
-  sumFoot.innerHTML='<tr><td style="color:var(--accent)">סה"כ</td><td>'+sTotCap.toLocaleString()+'</td><td style="color:#6c9fd9">'+sTotSeason.toLocaleString()+'</td><td style="color:var(--accent2)">'+sTotPaid.toLocaleString()+'</td><td style="color:#a78bfa">'+sTotFree.toLocaleString()+'</td><td>'+sTotTaken.toLocaleString()+'</td><td style="color:var(--accent);font-weight:700">'+sTotRemain.toLocaleString()+'</td><td><span class="pb"><span class="pbf" style="width:'+sPct+'%;background:var(--accent2)"></span></span>'+sPct+'%</td></tr>';
+  var sTotHeld=groupSumData.reduce(function(s,g){return s+(g.held||0);},0);
+  sumFoot.innerHTML='<tr><td style="color:var(--accent)">סה"כ</td><td>'+sTotCap.toLocaleString()+'</td><td style="color:#6c9fd9">'+sTotSeason.toLocaleString()+'</td><td style="color:var(--accent2)">'+sTotPaid.toLocaleString()+'</td><td style="color:#a78bfa">'+sTotFree.toLocaleString()+'</td><td style="color:#fb923c">'+(sTotHeld>0?sTotHeld.toLocaleString()+' 🛒':'—')+'</td><td>'+sTotTaken.toLocaleString()+'</td><td style="color:var(--accent);font-weight:700">'+sTotRemain.toLocaleString()+'</td><td><span class="pb"><span class="pbf" style="width:'+sPct+'%;background:var(--accent2)"></span></span>'+sPct+'%</td></tr>';
   sumWrap.style.display = groupSumData.length ? 'block' : 'none';
   tfoot.innerHTML = '<tr>' +
     '<td style="text-align:right">סה"כ</td>' +
