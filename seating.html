@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.6)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.7)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -308,12 +308,19 @@ function showHeldList(section) {
   if (list.length > 0) {
     var hdr = document.createElement('div');
     hdr.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 60px;gap:8px;font-size:11px;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:6px';
-    hdr.innerHTML = '<span>שם</span><span>אימייל</span><span>כמות</span>';
+    hdr.innerHTML = '<span>שם</span><span>אימייל</span><span>כמות</span><span>פג תוקף</span>';
+    hdr.style.gridTemplateColumns = '1fr 1fr 50px 1fr';
     box.appendChild(hdr);
     list.forEach(function(item, i) {
       var row = document.createElement('div');
       row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 60px;gap:8px;padding:5px 0;border-bottom:1px solid #20242f;font-size:12px';
-      row.innerHTML = '<span>' + (i+1) + '. ' + (item.name||'—') + '</span><span style="color:var(--muted);font-size:10px">' + (item.email||'—') + '</span><span style="color:#fb923c">' + item.amount + '</span>';
+      var expStr = '—';
+      if (item.expiresAt) {
+        var exp = new Date(item.expiresAt);
+        expStr = exp.toLocaleString('he-IL', {timeZone:'Asia/Jerusalem',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      }
+      row.style.gridTemplateColumns = '1fr 1fr 50px 1fr';
+      row.innerHTML = '<span>' + (i+1) + '. ' + (item.name||'—') + '</span><span style="color:var(--muted);font-size:10px">' + (item.email||'—') + '</span><span style="color:#fb923c">' + item.amount + '</span><span style="color:var(--muted);font-size:10px">' + expStr + '</span>';
       box.appendChild(row);
     });
   } else {
