@@ -85,11 +85,11 @@
 const SEATS = { 'PLATINUM': 160, 'R2': 14, 'R1': 14, 'L1': 14, 'L2': 14, 'L3': 14 };
 const SECTION_LABELS = {
   'PLATINUM': 'פלטינום',
-  'R2': 'ימין 2',
-  'R1': 'ימין 1',
-  'L1': 'שמאל 1',
-  'L2': 'שמאל 2',
-  'L3': 'שמאל 3',
+  'R2': 'R2',
+  'R1': 'R1',
+  'L1': 'L1',
+  'L2': 'L2',
+  'L3': 'L3',
 };
 const SECTIONS = ['PLATINUM', 'R1', 'R2', 'L1', 'L2', 'L3'];
 
@@ -154,7 +154,7 @@ function renderMap(section){
   const mapDiv = document.createElement('div');
   mapDiv.className = 'seat-map';
 
-  data.rows.forEach(rowNum=>{
+  data.rows.slice().reverse().forEach(rowNum=>{
     const seatsInRow = data.seats.filter(s=>s.row===rowNum);
     if(seatsInRow.length===0) return;
     const rowSeatNums = new Set(seatsInRow.map(s=>s.seat));
@@ -179,7 +179,7 @@ function renderMap(section){
           cell.textContent = s;
           const tip = document.createElement('div');
           tip.className = 'stip';
-          tip.textContent = t.phone ? `${t.name} · מושב ${s} · ${t.phone}` : `${t.name} · מושב ${s}`;
+          tip.textContent = `${t.name} · שורה ${rowNum} · מושב ${s}`;
           cell.appendChild(tip);
         } else {
           cell.className = 'map-seat empty-seat';
