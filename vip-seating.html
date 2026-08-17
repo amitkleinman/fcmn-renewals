@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>מפת מושבים VIP</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1f2330; --border:#2b3040;
+    --text:#e8eaf0; --muted:#9aa3b5; --accent:#f5c518; --accent2:#2dd4a3;
+    --danger:#ef5b5b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text);
+    min-height:100vh;
+  }
+  header{
+    position:sticky; top:0; z-index:5; background:linear-gradient(180deg,#14161c,#14161cee);
+    backdrop-filter:blur(6px); padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  h1{margin:0 0 4px; font-size:19px; display:flex; align-items:center; gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .subtitle{font-size:12.5px; color:var(--muted)}
+
+  .tabs{
+    display:flex; gap:6px; flex-wrap:wrap; padding:12px 20px 0;
+  }
+  .tab{
+    flex:0 0 auto; padding:9px 16px; border-radius:9px; cursor:pointer;
+    background:var(--panel); border:1px solid var(--border);
+    color:var(--muted); font-size:13.5px; white-space:nowrap;
+  }
+  .tab:hover{color:var(--text); border-color:#3b4255}
+  .tab.active{
+    background:var(--panel2); color:var(--text); border-color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent) inset;
+  }
+
+  main{padding:16px 20px 60px}
+  .section-panel{
+    border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--panel);
+  }
+  .map-stats{font-size:12.5px; color:var(--muted); padding:14px 16px 4px; display:flex; gap:16px; flex-wrap:wrap}
+  .map-legend{font-size:11px; color:var(--muted); padding:6px 16px 14px; display:flex; gap:14px; flex-wrap:wrap}
+  .map-legend span{display:flex; align-items:center; gap:5px}
+  .map-legend .lb{width:12px;height:12px;border-radius:3px}
+  .seat-map{padding:8px 16px 20px; overflow-x:auto}
+  .map-row{display:flex; align-items:center; gap:4px; margin-bottom:4px}
+  .map-row-label{width:34px; text-align:center; font-size:10px; color:var(--muted); flex-shrink:0}
+  .map-seat{
+    width:30px; height:30px; border-radius:6px; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; color:var(--muted); position:relative;
+    background:var(--panel2); flex-shrink:0;
+  }
+  .map-seat.taken{background:#3a1f4d; border-color:#b183e0; color:#d9baf5}
+  .map-seat.empty-seat{background:var(--panel); border-color:#2b3040; color:#3a4055}
+  .map-seat .stip{
+    display:none; position:absolute; top:calc(100% + 4px); right:50%; transform:translateX(50%);
+    background:#22273a; border:1px solid var(--border); border-radius:6px;
+    padding:5px 8px; font-size:10px; color:var(--text); white-space:nowrap; z-index:200;
+    pointer-events:none;
+  }
+  .map-seat.taken:hover .stip{display:block}
+  .loading{padding:60px; text-align:center; color:var(--muted)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2b3040;border-radius:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span> מפת מושבים · VIP / פלטינום</h1>
+  <div class="subtitle">תצוגה בלבד — סטטוס תפוסה ושמות</div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<main id="main">
+  <div class="loading">טוען...</div>
+</main>
+
+<script>
+const SEATS = { 'PLATINUM': 160, 'R2': 14, 'R1': 14, 'L1': 14, 'L2': 14, 'L3': 14 };
+const SECTION_LABELS = {
+  'PLATINUM': 'פלטינום',
+  'R2': 'ימין 2',
+  'R1': 'ימין 1',
+  'L1': 'שמאל 1',
+  'L2': 'שמאל 2',
+  'L3': 'שמאל 3',
+};
+const SECTIONS = ['PLATINUM', 'R1', 'R2', 'L1', 'L2', 'L3'];
+
+const MAP_DATA = {"PLATINUM": {"seats": [{"id": null, "row": 18, "seat": 74, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 75, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 76, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 77, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 78, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 79, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 80, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 81, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 82, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 83, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 84, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 85, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 86, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 87, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 88, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 1, "row": 18, "seat": 89, "name": "רונן טוב", "email": "ronentov@gmail.com", "phone": 972522925555, "has_ticket": true}, {"id": 2, "row": 18, "seat": 90, "name": "רונן טוב", "email": "ronentov@gmail.com", "phone": 972522925555, "has_ticket": true}, {"id": 3, "row": 18, "seat": 91, "name": "רונן טוב", "email": "ronentov@gmail.com", "phone": 972522925555, "has_ticket": true}, {"id": 4, "row": 18, "seat": 92, "name": "רונן טוב", "email": "ronentov@gmail.com", "phone": 972522925555, "has_ticket": true}, {"id": null, "row": 18, "seat": 93, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 5, "row": 18, "seat": 94, "name": "משה בובליל", "email": "moshebublil18@gmail.com", "phone": 972543975628, "has_ticket": true}, {"id": 6, "row": 18, "seat": 95, "name": "דרור בקשי", "email": "dror@golan-westline.co.il", "phone": 972502423808, "has_ticket": true}, {"id": 7, "row": 18, "seat": 96, "name": "דרור בקשי", "email": "dror@golan-westline.co.il", "phone": 972502423808, "has_ticket": true}, {"id": 8, "row": 18, "seat": 97, "name": "דרור בקשי", "email": "dror@golan-westline.co.il", "phone": 972502423808, "has_ticket": true}, {"id": 9, "row": 18, "seat": 98, "name": "אייל בקשי", "email": "eyal@barakcapital.com", "phone": 972545636622, "has_ticket": true}, {"id": 10, "row": 18, "seat": 99, "name": "אייל בקשי", "email": "eyal@barakcapital.com", "phone": 972545636622, "has_ticket": true}, {"id": 11, "row": 18, "seat": 100, "name": "אמיר ניסים", "email": "amir7351141@gmail.com", "phone": 972507351141, "has_ticket": true}, {"id": 12, "row": 18, "seat": 101, "name": "ליאור כהן", "email": "sliorco@gmail.com", "phone": 972507054638, "has_ticket": true}, {"id": 13, "row": 18, "seat": 102, "name": "ליאור כהן", "email": "sliorco@gmail.com", "phone": 972507054638, "has_ticket": true}, {"id": null, "row": 18, "seat": 103, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 104, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 105, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 14, "row": 18, "seat": 106, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 15, "row": 18, "seat": 107, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 16, "row": 18, "seat": 108, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 17, "row": 18, "seat": 109, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 18, "row": 18, "seat": 110, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 19, "row": 18, "seat": 111, "name": "גל חלפון", "email": "gal@halfon-law.co.il", "phone": 972526500555, "has_ticket": true}, {"id": 20, "row": 18, "seat": 112, "name": "שמעון סבאג", "email": "sabag@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 21, "row": 18, "seat": 113, "name": "שמעון סבאג", "email": "sabag@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 22, "row": 18, "seat": 114, "name": "שמעון סבאג", "email": "sabag@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": null, "row": 18, "seat": 115, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 116, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 117, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 118, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 119, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 120, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 121, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 122, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 123, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 124, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 125, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 23, "row": 18, "seat": 126, "name": "חן חסון", "email": "danielaz+hen@leaan.co.il", "phone": "", "has_ticket": true}, {"id": 24, "row": 18, "seat": 127, "name": "חן חסון", "email": "danielaz+hen@leaan.co.il", "phone": "", "has_ticket": true}, {"id": 25, "row": 18, "seat": 128, "name": "חן חסון", "email": "danielaz+hen@leaan.co.il", "phone": "", "has_ticket": true}, {"id": 26, "row": 18, "seat": 129, "name": "חן חסון", "email": "danielaz+hen@leaan.co.il", "phone": "", "has_ticket": true}, {"id": null, "row": 19, "seat": 74, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 75, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 76, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 77, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 78, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 79, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 80, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 81, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 82, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 83, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 84, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 85, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 27, "row": 19, "seat": 86, "name": "לשם אקריש", "email": "kbeladev@fcmn.co.il", "phone": 972545574411, "has_ticket": true}, {"id": 28, "row": 19, "seat": 87, "name": "לשם אקריש", "email": "kbeladev@fcmn.co.il", "phone": 972545574411, "has_ticket": true}, {"id": 29, "row": 19, "seat": 88, "name": "בני עמוס", "email": "bennya@astralwatches.co.il", "phone": 972505424444, "has_ticket": true}, {"id": 30, "row": 19, "seat": 89, "name": "בני עמוס", "email": "bennya@astralwatches.co.il", "phone": 972505424444, "has_ticket": true}, {"id": 31, "row": 19, "seat": 90, "name": "בני עמוס", "email": "bennya@astralwatches.co.il", "phone": 972505424444, "has_ticket": true}, {"id": 32, "row": 19, "seat": 91, "name": "בני עמוס", "email": "bennya@astralwatches.co.il", "phone": 972505424444, "has_ticket": true}, {"id": null, "row": 19, "seat": 92, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 93, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 33, "row": 19, "seat": 94, "name": "אלי חי", "email": "elijanah6@gmail.com", "phone": 972524688677, "has_ticket": true}, {"id": 34, "row": 19, "seat": 95, "name": "אלי חי", "email": "elijanah6@gmail.com", "phone": 972524688677, "has_ticket": true}, {"id": 35, "row": 19, "seat": 96, "name": "קובי בלדב", "email": "kobi@maagal-ins.co.il", "phone": "", "has_ticket": true}, {"id": 36, "row": 19, "seat": 97, "name": "קובי בלדב", "email": "kobi@maagal-ins.co.il", "phone": "", "has_ticket": true}, {"id": 37, "row": 19, "seat": 98, "name": "קובי בלדב", "email": "kobi@maagal-ins.co.il", "phone": "", "has_ticket": true}, {"id": 38, "row": 19, "seat": 99, "name": "אשר בן הרוש", "email": "abenarrosh@omegador.co.il", "phone": 972523854666, "has_ticket": true}, {"id": 39, "row": 19, "seat": 100, "name": "אשר בן הרוש", "email": "abenarrosh@omegador.co.il", "phone": 972523854666, "has_ticket": true}, {"id": null, "row": 19, "seat": 101, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 40, "row": 19, "seat": 102, "name": "יורם דבש", "email": "yoram@ydvash.com", "phone": 972543978614, "has_ticket": true}, {"id": 41, "row": 19, "seat": 103, "name": "קובי כהן", "email": "kobi@yerushalmi.com", "phone": 972543973711, "has_ticket": true}, {"id": 42, "row": 19, "seat": 104, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 43, "row": 19, "seat": 105, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 44, "row": 19, "seat": 106, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 45, "row": 19, "seat": 107, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 46, "row": 19, "seat": 108, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 47, "row": 19, "seat": 109, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 48, "row": 19, "seat": 110, "name": "אריק שחורי", "email": "arikshchori@gmail.com", "phone": 972538363631, "has_ticket": true}, {"id": 49, "row": 19, "seat": 111, "name": "אריק שחורי", "email": "arikshchori@gmail.com", "phone": 972538363631, "has_ticket": true}, {"id": null, "row": 19, "seat": 112, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 113, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 50, "row": 19, "seat": 114, "name": "מאיר גביש", "email": "meirga007@gmail.com", "phone": 972508549880, "has_ticket": true}, {"id": null, "row": 19, "seat": 115, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 116, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 117, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 118, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 119, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 120, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 121, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 122, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 123, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 124, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 125, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 51, "row": 19, "seat": 126, "name": "אלדן אלדן", "email": "elad.m@eldan.co.il", "phone": 972504866446, "has_ticket": true}, {"id": 52, "row": 19, "seat": 127, "name": "אלדן אלדן", "email": "elad.m@eldan.co.il", "phone": 972504866446, "has_ticket": true}, {"id": 53, "row": 19, "seat": 128, "name": "טמפו טמפו", "email": "hilada@tempo.co.il", "phone": 972544227251, "has_ticket": true}, {"id": 54, "row": 19, "seat": 129, "name": "טמפו טמפו", "email": "hilada@tempo.co.il", "phone": 972544227251, "has_ticket": true}, {"id": null, "row": 20, "seat": 74, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 75, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 76, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 77, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 78, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 79, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 80, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 81, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 82, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 83, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 84, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 85, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 86, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 87, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 88, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 89, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 90, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 55, "row": 20, "seat": 91, "name": "דן אלפנט", "email": "dan.elefant@gmail.com", "phone": 972544522217, "has_ticket": true}, {"id": 56, "row": 20, "seat": 92, "name": "דן אלפנט", "email": "dan.elefant@gmail.com", "phone": 972544522217, "has_ticket": true}, {"id": 57, "row": 20, "seat": 93, "name": "דן אלפנט", "email": "dan.elefant@gmail.com", "phone": 972544522217, "has_ticket": true}, {"id": 58, "row": 20, "seat": 94, "name": "לירן רזמוביץ", "email": "liranrazmo@gmail.com", "phone": 972523040777, "has_ticket": true}, {"id": 59, "row": 20, "seat": 95, "name": "לירן רזמוביץ", "email": "liranrazmo@gmail.com", "phone": 972523040777, "has_ticket": true}, {"id": null, "row": 20, "seat": 96, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 97, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 98, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 99, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 60, "row": 20, "seat": 100, "name": "איתי בוליגו", "email": "danielaz+buligo@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": null, "row": 20, "seat": 101, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 102, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 61, "row": 20, "seat": 103, "name": "דביר גלזר", "email": "deivir@zahav.net.il", "phone": 972505786100, "has_ticket": true}, {"id": null, "row": 20, "seat": 104, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 105, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 62, "row": 20, "seat": 106, "name": "ירין טוגנדר", "email": "yarinfifa2@gmail.com", "phone": 972507588838, "has_ticket": true}, {"id": 63, "row": 20, "seat": 107, "name": "יום טוב סמיה", "email": "yomtov@ysamgroup.com", "phone": 972542419999, "has_ticket": true}, {"id": 64, "row": 20, "seat": 108, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 65, "row": 20, "seat": 109, "name": "אודי קופרמן", "email": "danielaz+kuperman@leaan.co.il", "phone": 972532215156, "has_ticket": true}, {"id": 66, "row": 20, "seat": 110, "name": "לירון פריז", "email": "lironpariz1@gmail.com", "phone": 972527988888, "has_ticket": true}, {"id": 67, "row": 20, "seat": 111, "name": "לירון פריז", "email": "lironpariz1@gmail.com", "phone": 972527988888, "has_ticket": true}, {"id": 68, "row": 20, "seat": 112, "name": "לירון פריז", "email": "lironpariz1@gmail.com", "phone": 972527988888, "has_ticket": true}, {"id": null, "row": 20, "seat": 113, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 69, "row": 20, "seat": 114, "name": "רובי אלטשולר", "email": "robialtshuler@gmail.com", "phone": 972526388070, "has_ticket": true}, {"id": 70, "row": 20, "seat": 115, "name": "רובי אלטשולר", "email": "robialtshuler@gmail.com", "phone": 972526388070, "has_ticket": true}, {"id": 71, "row": 20, "seat": 116, "name": "קריספל רן", "email": "rankrispel@gmail.com", "phone": 972509819811, "has_ticket": true}, {"id": 72, "row": 20, "seat": 117, "name": "קריספל רן", "email": "rankrispel@gmail.com", "phone": 972509819811, "has_ticket": true}, {"id": null, "row": 20, "seat": 118, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 119, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 120, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 121, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 122, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 123, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 124, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 125, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 126, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 127, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 128, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 129, "name": "", "email": "", "phone": "", "has_ticket": false}], "rows": [18, 19, 20], "all_seats": [74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]}, "R2": {"seats": [{"id": 73, "row": 18, "seat": 62, "name": "זאב פולק", "email": "zevik01983@gmail.com", "phone": "", "has_ticket": true}, {"id": 74, "row": 18, "seat": 63, "name": "איתי זלמנוביץ", "email": "ishay@lakers-holdings.com", "phone": 972544459058, "has_ticket": true}, {"id": 75, "row": 18, "seat": 64, "name": "איתי זלמנוביץ", "email": "ishay@lakers-holdings.com", "phone": 972544459058, "has_ticket": true}, {"id": 76, "row": 18, "seat": 65, "name": "מיקי ג\\'אן", "email": "miki@betoo.co.il", "phone": 972502072074, "has_ticket": true}, {"id": 77, "row": 18, "seat": 66, "name": "שלומי עמוס", "email": "shlomi@betoo.co.il", "phone": 972502072072, "has_ticket": true}, {"id": null, "row": 18, "seat": 67, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 62, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 63, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 64, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 78, "row": 19, "seat": 65, "name": "רונן עקביה", "email": "ronen@magma-re.com", "phone": 972545333760, "has_ticket": true}, {"id": 79, "row": 19, "seat": 66, "name": "רונן עקביה", "email": "ronen@magma-re.com", "phone": 972545333760, "has_ticket": true}, {"id": null, "row": 19, "seat": 67, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 62, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 63, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 64, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 65, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 80, "row": 20, "seat": 66, "name": "שמואל שקרק", "email": "shmuel_margoah@012.net.il", "phone": 972544217615, "has_ticket": true}, {"id": 81, "row": 20, "seat": 67, "name": "שמואל שקרק", "email": "shmuel_margoah@012.net.il", "phone": 972544217615, "has_ticket": true}], "rows": [18, 19, 20], "all_seats": [62, 63, 64, 65, 66, 67]}, "R1": {"seats": [{"id": null, "row": 18, "seat": 68, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 69, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 70, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 71, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 72, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 73, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 68, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 69, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 70, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 71, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 72, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 73, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 68, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 69, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 70, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 71, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 72, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 73, "name": "", "email": "", "phone": "", "has_ticket": false}], "rows": [18, 19, 20], "all_seats": [68, 69, 70, 71, 72, 73]}, "L1": {"seats": [{"id": 82, "row": 18, "seat": 130, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 83, "row": 18, "seat": 131, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 84, "row": 18, "seat": 132, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 85, "row": 18, "seat": 133, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 86, "row": 18, "seat": 134, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": null, "row": 18, "seat": 135, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 87, "row": 19, "seat": 130, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 88, "row": 19, "seat": 131, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 89, "row": 19, "seat": 132, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 90, "row": 19, "seat": 133, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 91, "row": 19, "seat": 134, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": null, "row": 19, "seat": 135, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 92, "row": 20, "seat": 130, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 93, "row": 20, "seat": 131, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": null, "row": 20, "seat": 132, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 133, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 94, "row": 20, "seat": 134, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}, {"id": 95, "row": 20, "seat": 135, "name": "רן דוד", "email": "ran@comses.co.il", "phone": 972505345721, "has_ticket": true}], "rows": [18, 19, 20], "all_seats": [130, 131, 132, 133, 134, 135]}, "L2": {"seats": [{"id": null, "row": 18, "seat": 136, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 137, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 138, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 139, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 140, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 141, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 136, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 96, "row": 19, "seat": 137, "name": "טמפו טמפו", "email": "hilada@tempo.co.il", "phone": 972544227251, "has_ticket": true}, {"id": 97, "row": 19, "seat": 138, "name": "טמפו טמפו", "email": "hilada@tempo.co.il", "phone": 972544227251, "has_ticket": true}, {"id": null, "row": 19, "seat": 139, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 140, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 141, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 136, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 137, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 138, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 139, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 140, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 141, "name": "", "email": "", "phone": "", "has_ticket": false}], "rows": [18, 19, 20], "all_seats": [136, 137, 138, 139, 140, 141]}, "L3": {"seats": [{"id": null, "row": 18, "seat": 142, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 143, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 144, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 145, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 146, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 18, "seat": 147, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 142, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 143, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 144, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 145, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 146, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 19, "seat": 147, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": 98, "row": 20, "seat": 142, "name": "אורי שטיינבך", "email": "uri@psltd.co.il", "phone": 9720506525656, "has_ticket": true}, {"id": 99, "row": 20, "seat": 143, "name": "אורי שטיינבך", "email": "uri@psltd.co.il", "phone": 9720506525656, "has_ticket": true}, {"id": null, "row": 20, "seat": 144, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 145, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 146, "name": "", "email": "", "phone": "", "has_ticket": false}, {"id": null, "row": 20, "seat": 147, "name": "", "email": "", "phone": "", "has_ticket": false}], "rows": [18, 19, 20], "all_seats": [142, 143, 144, 145, 146, 147]}};
+
+let activeSection = 'PLATINUM';
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  for(const section of SECTIONS){
+    if(!MAP_DATA[section]) continue;
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (section===activeSection ? ' active' : '');
+    tab.textContent = SECTION_LABELS[section] || section;
+    tab.addEventListener('click', ()=>{
+      activeSection = section;
+      renderTabs();
+      renderMap(section);
+    });
+    el.appendChild(tab);
+  }
+}
+
+function renderMap(section){
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const data = MAP_DATA[section];
+  if(!data){ main.innerHTML = '<div class="loading">אין נתונים לעמדה זו</div>'; return; }
+
+  const seatMap = new Map();
+  data.seats.forEach(s => seatMap.set(`${s.row}|${s.seat}`, s));
+
+  const panel = document.createElement('div');
+  panel.className = 'section-panel';
+
+  const taken = data.seats.filter(s=>s.has_ticket).length;
+  const total = SEATS[section] || data.seats.length;
+  const empty = total - taken;
+
+  const statsDiv = document.createElement('div');
+  statsDiv.className = 'map-stats';
+  statsDiv.innerHTML = `
+    <span><b>${total}</b> מקומות</span>
+    <span>תפוסים: <b style="color:#d9baf5">${taken}</b></span>
+    <span>פנויים: <b style="color:var(--muted)">${empty}</b></span>
+  `;
+  panel.appendChild(statsDiv);
+
+  const legend = document.createElement('div');
+  legend.className = 'map-legend';
+  legend.innerHTML = `
+    <span><span class="lb" style="background:#3a1f4d;border:1px solid #b183e0"></span> תפוס (ריחוף להצגת שם)</span>
+    <span><span class="lb" style="background:var(--panel);border:1px solid #2b3040"></span> פנוי</span>
+  `;
+  panel.appendChild(legend);
+
+  const mapDiv = document.createElement('div');
+  mapDiv.className = 'seat-map';
+
+  data.rows.forEach(rowNum=>{
+    const seatsInRow = data.seats.filter(s=>s.row===rowNum);
+    if(seatsInRow.length===0) return;
+    const rowSeatNums = new Set(seatsInRow.map(s=>s.seat));
+
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'map-row';
+    const label = document.createElement('div');
+    label.className = 'map-row-label';
+    label.textContent = `ש׳ ${rowNum}`;
+    rowDiv.appendChild(label);
+
+    const seatOrder = data.all_seats.slice().reverse();
+    seatOrder.forEach(s=>{
+      const cell = document.createElement('div');
+      if(!rowSeatNums.has(s)){
+        cell.className = 'map-seat';
+        cell.style.cssText = 'background:transparent;border-color:transparent;pointer-events:none';
+      } else {
+        const t = seatMap.get(`${rowNum}|${s}`);
+        if(t && t.has_ticket){
+          cell.className = 'map-seat taken';
+          cell.textContent = s;
+          const tip = document.createElement('div');
+          tip.className = 'stip';
+          tip.textContent = t.phone ? `${t.name} · מושב ${s} · ${t.phone}` : `${t.name} · מושב ${s}`;
+          cell.appendChild(tip);
+        } else {
+          cell.className = 'map-seat empty-seat';
+          cell.textContent = s;
+        }
+      }
+      rowDiv.appendChild(cell);
+    });
+    mapDiv.appendChild(rowDiv);
+  });
+
+  panel.appendChild(mapDiv);
+  main.appendChild(panel);
+}
+
+renderTabs();
+renderMap(activeSection);
+</script>
+
+</body>
+</html>
