@@ -54,8 +54,12 @@
     font-size:9px; color:var(--muted); position:relative;
     background:var(--panel2); flex-shrink:0;
   }
-  .map-seat.taken{background:#3a1f4d; border-color:#b183e0; color:#d9baf5}
+  .map-seat.taken{background:#16332a; border-color:var(--accent2); color:var(--accent2)}
   .map-seat.empty-seat{background:var(--panel); border-color:#2b3040; color:#3a4055}
+  .map-seat.no-seat{
+    background:repeating-linear-gradient(45deg, #1a1d26, #1a1d26 4px, #24283566 4px, #24283566 8px);
+    border-color:#20242f; pointer-events:none;
+  }
   .map-seat .stip{
     display:none; position:absolute; top:calc(100% + 4px); right:50%; transform:translateX(50%);
     background:#22273a; border:1px solid var(--border); border-radius:6px;
@@ -140,7 +144,7 @@ function renderMap(section){
   statsDiv.className = 'map-stats';
   statsDiv.innerHTML = `
     <span><b>${total}</b> מקומות</span>
-    <span>תפוסים: <b style="color:#d9baf5">${taken}</b></span>
+    <span>תפוסים: <b style="color:var(--accent2)">${taken}</b></span>
     <span>פנויים: <b style="color:var(--muted)">${empty}</b></span>
   `;
   panel.appendChild(statsDiv);
@@ -148,8 +152,9 @@ function renderMap(section){
   const legend = document.createElement('div');
   legend.className = 'map-legend';
   legend.innerHTML = `
-    <span><span class="lb" style="background:#3a1f4d;border:1px solid #b183e0"></span> תפוס (ריחוף להצגת שם)</span>
+    <span><span class="lb" style="background:#16332a;border:1px solid var(--accent2)"></span> תפוס (ריחוף להצגת שם)</span>
     <span><span class="lb" style="background:var(--panel);border:1px solid #2b3040"></span> פנוי</span>
+    <span><span class="lb" style="background:repeating-linear-gradient(45deg,#1a1d26,#1a1d26 3px,#242835 3px,#242835 6px);border:1px solid #20242f"></span> אין מושב</span>
   `;
   panel.appendChild(legend);
 
@@ -172,8 +177,7 @@ function renderMap(section){
     seatOrder.forEach(s=>{
       const cell = document.createElement('div');
       if(!rowSeatNums.has(s)){
-        cell.className = 'map-seat';
-        cell.style.cssText = 'background:transparent;border-color:transparent;pointer-events:none';
+        cell.className = 'map-seat no-seat';
       } else {
         const liveKey = section + '|' + rowNum + '|' + s;
         const liveEntry = liveStatus[liveKey];
