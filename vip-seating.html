@@ -139,6 +139,7 @@ function renderMap(section){
   const total = SEATS[section] || data.seats.length;
   const taken = data.seats.filter(s => liveStatus[section+'|'+s.row+'|'+s.seat]).length;
   const empty = total - taken;
+  const pct = total ? Math.round(taken/total*100) : 0;
 
   const statsDiv = document.createElement('div');
   statsDiv.className = 'map-stats';
@@ -146,6 +147,7 @@ function renderMap(section){
     <span><b>${total}</b> מקומות</span>
     <span>תפוסים: <b style="color:var(--accent2)">${taken}</b></span>
     <span>פנויים: <b style="color:var(--muted)">${empty}</b></span>
+    <span>אחוז תפוסה: <b style="color:var(--accent)">${pct}%</b></span>
   `;
   panel.appendChild(statsDiv);
 
