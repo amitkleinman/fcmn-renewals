@@ -64,7 +64,9 @@
   .pill{
     padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600;
     background:var(--panel2); border:1px solid var(--border);
+    transition:border-color .15s, color .15s;
   }
+  .pill:hover{border-color:var(--accent); color:var(--accent)}
   .pill.red{border-color:var(--danger); color:var(--danger)}
   .pill.yellow{border-color:var(--accent); color:var(--accent)}
   .pill.green{border-color:var(--accent2); color:var(--accent2)}
@@ -272,24 +274,38 @@ function compare() {
 
   renderResults();
   document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו';
-  // Write count to Firestore so tracker picks it up
+  // Write count + full list to Firestore
+  var listForFirestore = notRenewed.map(function(r) {
+    return { customerId: r.customerId, email: r.email, name: r.name, section: r.section };
+  });
   db.collection('meta').doc('stats').update({
     notRenewedCount: notRenewed.length,
     notRenewedUpdated: new Date().toISOString()
-  }).catch(function(e){ console.warn('Firestore update failed:', e); });
+  }).catch(function(e){ console.warn('Firestore stats update failed:', e); });
+  db.collection('meta').doc('notRenewedList').set({
+    list: listForFirestore,
+    updatedAt: new Date().toISOString()
+  }).catch(function(e){ console.warn('Firestore list update failed:', e); });
   document.getElementById('exportBtn').style.display = '';
 }
 
+var activeSectionFilter = '';
+
 var filtered = [];
-function renderResults() {
+function renderResults(sectionClick) {
+  if (sectionClick !== undefined) {
+    activeSectionFilter = (activeSectionFilter === sectionClick) ? '' : sectionClick;
+  }
   var q = (document.getElementById('searchInput')||{}).value || '';
   q = q.trim().toLowerCase();
-  filtered = q ? notRenewed.filter(function(r) {
+  filtered = notRenewed.filter(function(r) {
+    if (activeSectionFilter && r.section !== activeSectionFilter) return false;
+    if (!q) return true;
     return r.name.toLowerCase().includes(q) ||
            r.email.toLowerCase().includes(q) ||
            r.section.toLowerCase().includes(q) ||
            r.phone.includes(q);
-  }) : notRenewed;
+  });
 
   // Group by section for summary
   var bySec = {};
@@ -297,14 +313,15 @@ function renderResults() {
   var secList = Object.keys(bySec).sort();
 
   var html = '<div class="summary-pills">';
-  html += '<span class="pill red">לא חידשו: ' + notRenewed.length + '</span>';
+  html += '<span class="pill red" style="cursor:pointer" onclick="activeSectionFilter=\'\';renderResults()">לא חידשו: ' + notRenewed.length + '</span>';
   html += '<span class="pill yellow">מוצגים: ' + filtered.length + '</span>';
   secList.forEach(function(s) {
-    html += '<span class="pill">' + s + ': ' + bySec[s] + '</span>';
+    var active = activeSectionFilter === s;
+    html += '<span class="pill" style="cursor:pointer;' + (active ? 'border-color:var(--accent);color:var(--accent);background:var(--panel2)' : '') + '" onclick="renderResults(\'' + s + '\')">' + s + ': ' + bySec[s] + '</span>';
   });
   html += '</div>';
 
-  html += '<input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל / יציע..." oninput="renderResults()" value="' + (q||'') + '">';
+  html += '<input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל / יציע..." oninput="renderResults(undefined)" value="' + (q||'') + '">';
 
   if (filtered.length === 0) {
     html += '<div class="loading">לא נמצאו תוצאות</div>';
