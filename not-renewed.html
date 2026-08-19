@@ -28,7 +28,7 @@
     background:var(--panel2); margin-right:auto;
   }
   .upload-area{
-    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
     padding:20px;
   }
   .upload-box{
@@ -115,6 +115,13 @@
     <div class="count" id="currCount"></div>
     <input type="file" id="currFile" accept=".csv,.xlsx,.xls" onchange="handleFile('curr', this)">
   </div>
+  <div class="upload-box" id="tagBox" onclick="document.getElementById('tagFile').click()">
+    <div class="icon">🏷️</div>
+    <div class="label">לקוחות שחידשו</div>
+    <div class="sub">רשימת לקוחות עם תג חידוש</div>
+    <div class="count" id="tagCount"></div>
+    <input type="file" id="tagFile" accept=".csv,.xlsx,.xls" onchange="handleFile('tag', this)">
+  </div>
 </div>
 
 <div class="controls">
@@ -127,7 +134,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-var lastData = null, currData = null, notRenewed = [];
+var lastData = null, currData = null, tagData = null, notRenewed = [];
 
 function handleFile(which, input) {
   var file = input.files[0];
@@ -165,10 +172,15 @@ function processData(which, rows) {
     lastData = filtered;
     document.getElementById('lastBox').classList.add('loaded');
     document.getElementById('lastCount').textContent = filtered.length + ' כרטיסים';
-  } else {
+  } else if (which === 'curr') {
     currData = filtered;
     document.getElementById('currBox').classList.add('loaded');
     document.getElementById('currCount').textContent = filtered.length + ' כרטיסים';
+  } else if (which === 'tag') {
+    // Customers file - no VALID/origin filter needed, use raw rows
+    tagData = rows;
+    document.getElementById('tagBox').classList.add('loaded');
+    document.getElementById('tagCount').textContent = rows.length + ' לקוחות';
   }
 
   if (lastData && currData) {
@@ -192,6 +204,18 @@ function compare() {
     if (email) currByEmail[email] = true;
   });
 
+  // Build lookup from tagged customers file (id = customerId)
+  var tagByCustomerId = {};
+  var tagByEmail = {};
+  if (tagData) {
+    tagData.forEach(function(r) {
+      var cid = normalize(r['id']);
+      var email = normalize(r['primaryEmail'] || r['email']);
+      if (cid) tagByCustomerId[cid] = true;
+      if (email) tagByEmail[email] = true;
+    });
+  }
+
   // Find last season customers not in current season
   lastData.forEach(function(r) {
     var cid = normalize(r['customerId']);
@@ -207,6 +231,8 @@ function compare() {
     var renewed = false;
     if (cid && currByCustomerId[cid]) renewed = true;
     if (!renewed && email && currByEmail[email]) renewed = true;
+    if (!renewed && cid && tagByCustomerId[cid]) renewed = true;
+    if (!renewed && email && tagByEmail[email]) renewed = true;
 
     if (!renewed) {
       notRenewed.push({
@@ -305,10 +331,10 @@ function exportCsv() {
 }
 
 // Drag and drop support
-['lastBox','currBox'].forEach(function(id) {
+['lastBox','currBox','tagBox'].forEach(function(id) {
   var box = document.getElementById(id);
-  var which = id === 'lastBox' ? 'last' : 'curr';
-  var input = document.getElementById(which === 'last' ? 'lastFile' : 'currFile');
+  var which = id === 'lastBox' ? 'last' : id === 'currBox' ? 'curr' : 'tag';
+  var input = document.getElementById(which === 'last' ? 'lastFile' : which === 'curr' ? 'currFile' : 'tagFile');
   box.addEventListener('dragover', function(e) { e.preventDefault(); box.classList.add('dragover'); });
   box.addEventListener('dragleave', function() { box.classList.remove('dragover'); });
   box.addEventListener('drop', function(e) {
