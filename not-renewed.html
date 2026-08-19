@@ -92,6 +92,23 @@
   }
   .loading{padding:60px; text-align:center; color:var(--muted)}
   ::-webkit-scrollbar{width:8px; height:8px}
+  .status-select{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:4px 8px; font-size:11.5px; font-family:inherit;
+    cursor:pointer; direction:rtl; max-width:130px;
+  }
+  .status-select:focus{outline:none; border-color:var(--accent)}
+  .status-select.s1{border-color:#6c9fd9; color:#6c9fd9}
+  .status-select.s2{border-color:var(--danger); color:var(--danger)}
+  .status-select.s3{border-color:var(--muted); color:var(--muted)}
+  .status-select.s4{border-color:var(--accent2); color:var(--accent2)}
+  .status-select.s5{border-color:var(--accent); color:var(--accent)}
+  .notes-input{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:4px 8px; font-size:11px; font-family:inherit;
+    width:140px; direction:rtl;
+  }
+  .notes-input:focus{outline:none; border-color:var(--accent)}
   ::-webkit-scrollbar-thumb{background:#2b3040; border-radius:6px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -161,7 +178,9 @@ db.collection('meta').doc('notRenewedList').get().then(function(snap) {
       phone: r.phone || '',
       section: r.section || '',
       row: r.row || '',
-      seat: r.seat || ''
+      seat: r.seat || '',
+      status: r.status || '',
+      notes: r.notes || ''
     };
   });
   var updatedAt = d.updatedAt ? new Date(d.updatedAt).toLocaleString('he-IL', {timeZone:'Asia/Jerusalem',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
@@ -275,6 +294,8 @@ function compare() {
       if (!cid && email && seenEmail[email]) return;
       if (cid) seenCid[cid] = true;
       if (email) seenEmail[email] = true;
+      // Preserve existing status/notes if customer was already in list
+      var existing = notRenewed.find(function(e){ return e.customerId && e.customerId === String(r['customerId']||'').trim(); });
       notRenewed.push({
         name: name,
         email: String(r['email']||'').trim(),
@@ -283,6 +304,8 @@ function compare() {
         section: section,
         row: row,
         seat: seat,
+        status: existing ? existing.status||'' : '',
+        notes: existing ? existing.notes||'' : '',
       });
     }
   });
@@ -298,7 +321,7 @@ function compare() {
   document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו';
   // Write count + full list to Firestore
   var listForFirestore = notRenewed.map(function(r) {
-    return { customerId: r.customerId, email: r.email, name: r.name, section: r.section };
+    return { customerId: r.customerId, email: r.email, name: r.name, section: r.section, row: r.row, seat: r.seat, phone: r.phone, status: r.status||'', notes: r.notes||'' };
   });
   db.collection('meta').doc('stats').update({
     notRenewedCount: notRenewed.length,
@@ -309,6 +332,28 @@ function compare() {
     updatedAt: new Date().toISOString()
   }).catch(function(e){ console.warn('Firestore list update failed:', e); });
   document.getElementById('exportBtn').style.display = '';
+}
+
+var STATUS_COLORS = {'מחכה לשיחה':'s1','לא מעוניין':'s2','לא עונה':'s3','חידש':'s4','אחר':'s5'};
+
+function updateField(key, field, value, el) {
+  // Update in local notRenewed array
+  var entry = notRenewed.find(function(r){ return (r.customerId && r.customerId === key) || (r.email && r.email === key); });
+  if (!entry) return;
+  entry[field] = value;
+  // Update color class on select
+  if (field === 'status' && el) {
+    el.className = 'status-select ' + (STATUS_COLORS[value] || '');
+  }
+  // Debounced Firestore write
+  clearTimeout(entry._saveTimer);
+  entry._saveTimer = setTimeout(function() {
+    var list = notRenewed.map(function(r) {
+      return { customerId: r.customerId||'', email: r.email||'', name: r.name||'', section: r.section||'', row: r.row||'', seat: r.seat||'', phone: r.phone||'', status: r.status||'', notes: r.notes||'' };
+    });
+    db.collection('meta').doc('notRenewedList').update({ list: list })
+      .catch(function(e){ console.warn('Save failed:', e); });
+  }, 800);
 }
 
 var activeSectionFilter = '';
@@ -349,7 +394,7 @@ function renderResults(sectionClick) {
     html += '<div class="loading">לא נמצאו תוצאות</div>';
   } else {
     html += '<table><thead><tr>';
-    html += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th>';
+    html += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th><th>סטטוס</th><th>הערות</th>';
     html += '</tr></thead><tbody>';
     filtered.forEach(function(r, i) {
       html += '<tr>';
@@ -360,6 +405,12 @@ function renderResults(sectionClick) {
       html += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
       html += '<td>' + esc(r.row) + '</td>';
       html += '<td>' + esc(r.seat) + '</td>';
+      var statusClass = ['','s1','s2','s3','s4','s5'][['','מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'].indexOf(r.status||'')];
+      html += '<td><select class="status-select ' + (statusClass||'') + '" onchange="updateField('' + esc(r.customerId||r.email) + '', 'status', this.value, this)">' +
+        '<option value="">—</option>' +
+        ['מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'].map(function(s){ return '<option value="' + s + '"' + (r.status===s?' selected':'') + '>' + s + '</option>'; }).join('') +
+        '</select></td>';
+      html += '<td><input class="notes-input" type="text" placeholder="הערה..." value="' + esc(r.notes||'') + '" onchange="updateField('' + esc(r.customerId||r.email) + '', 'notes', this.value, null)"></td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
