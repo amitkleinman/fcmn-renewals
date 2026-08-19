@@ -514,10 +514,16 @@ document.getElementById('loadBtn').addEventListener('click', function() {
 
 document.getElementById('endGameBtn').addEventListener('click', function() {
   if (!confirm('לסיים את המשחק ולאפס את הספירה?')) return;
+  // Get current active game before clearing
+  const activeEventId = document.getElementById('eventId').value;
   db.collection('meta').doc('activeGame').set({ eventId: '' })
     .then(function() {
+      // Clear gameSeatStatus from gameSeating doc
+      if (activeEventId) {
+        db.collection('gameSeating').doc(activeEventId).update({ gameSeatStatus: {} })
+          .catch(function() {}); // ignore if doc doesn't exist
+      }
       document.getElementById('eventId').value = '';
-
       document.getElementById('gameStatusEl').innerHTML = '';
       if (gameUnsub) { gameUnsub(); gameUnsub = null; }
       gameCounts = {};
