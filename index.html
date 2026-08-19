@@ -1056,7 +1056,7 @@ function updateStatsBar(){
     ${kasherLine}
     <div class="stat" style="margin-right:10px; border-right:1px solid var(--border); padding-right:14px">סה"כ מנויים שנה שעברה: <b>${stats.total}</b></div>
     <div class="stat">מחודשים: <b class="badge yes">${stats.renewed}</b></div>
-    <div class="stat">טרם חודשו: <b class="badge no">${stats.left}</b></div>
+    <div class="stat">טרם חודשו: <a href="not-renewed.html" style="text-decoration:none"><b class="badge no">${liveMeta.notRenewedCount !== undefined ? liveMeta.notRenewedCount : stats.left}</b></a></div>
     <div class="stat">אחוז חידוש: <b>${stats.pct}%</b></div>
     ${liveMeta.youthCount > 0 ? `<div class="stat">מנוי מחלקת נוער: <b class="badge yes clickable-badge" id="youthBadge" title="לחץ לצפייה ברשימה">${liveMeta.youthCount}</b></div>` : ''}
     ${liveMeta.payingCount > 0 ? `<div class="stat">מנויים משלמים: <b class="badge yes">${liveMeta.payingCount.toLocaleString()}</b></div>` : ''}
@@ -1238,6 +1238,7 @@ let liveSeatStatus = {}; // key: "section|row|seat" → {status, name}
       liveMeta.payingCount = d.payingCount ?? 0;
       liveMeta.totalRevenue = Math.max(d.totalRevenue ?? 0, TOTAL_REVENUE);
       liveMeta.lastUpdated = d.lastUpdated && d.totalNewSeason >= TOTAL_NEW_SEASON ? d.lastUpdated : LAST_UPDATED;
+      if (d.notRenewedCount !== undefined) liveMeta.notRenewedCount = d.notRenewedCount;
       liveMeta.newBuyersList = d.newBuyersList ?? [];
       liveMeta.kasherCount = d.kasherCount ?? 8;
       liveMeta.kasherRevenue = d.kasherRevenue ?? 4800;
