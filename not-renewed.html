@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>לא חידשו מנוי</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --panel2:#1f2330; --border:#2b3040;
+    --text:#e8eaf0; --muted:#9aa3b5; --accent:#f5c518; --accent2:#2dd4a3;
+    --danger:#ef5b5b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; direction:rtl}
+  header{
+    position:sticky; top:0; z-index:5;
+    background:linear-gradient(180deg,#14161c,#14161cee);
+    backdrop-filter:blur(6px); padding:14px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  h1{font-size:18px; display:flex; align-items:center; gap:8px}
+  h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .nav-btn{
+    font-size:11.5px; color:var(--muted); border:1px solid var(--border);
+    padding:5px 10px; border-radius:7px; text-decoration:none;
+    background:var(--panel2); margin-right:auto;
+  }
+  .upload-area{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    padding:20px;
+  }
+  .upload-box{
+    border:2px dashed var(--border); border-radius:12px;
+    padding:24px; text-align:center; cursor:pointer;
+    transition:border-color .2s;
+    background:var(--panel);
+  }
+  .upload-box:hover, .upload-box.dragover{border-color:var(--accent)}
+  .upload-box.loaded{border-color:var(--accent2); border-style:solid}
+  .upload-box .icon{font-size:28px; margin-bottom:8px}
+  .upload-box .label{font-size:14px; font-weight:600; margin-bottom:4px}
+  .upload-box .sub{font-size:11.5px; color:var(--muted)}
+  .upload-box .count{font-size:12px; color:var(--accent2); margin-top:6px; font-weight:600}
+  input[type=file]{display:none}
+  .controls{
+    padding:0 20px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .btn{
+    padding:9px 18px; border-radius:8px; border:none; cursor:pointer;
+    font-size:13px; font-weight:600; font-family:inherit;
+  }
+  .btn-primary{background:var(--accent); color:#000}
+  .btn-export{background:var(--panel2); color:var(--accent2); border:1px solid var(--accent2)}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .status-bar{
+    font-size:12px; color:var(--muted);
+  }
+  .results{padding:0 20px 60px}
+  .summary-pills{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .pill{
+    padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600;
+    background:var(--panel2); border:1px solid var(--border);
+  }
+  .pill.red{border-color:var(--danger); color:var(--danger)}
+  .pill.yellow{border-color:var(--accent); color:var(--accent)}
+  .pill.green{border-color:var(--accent2); color:var(--accent2)}
+  .search-bar{
+    width:100%; padding:9px 14px; border-radius:8px;
+    background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); font-size:13px; font-family:inherit;
+    margin-bottom:12px; direction:rtl;
+  }
+  .search-bar:focus{outline:none; border-color:var(--accent)}
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  th{
+    background:var(--panel2); color:var(--muted); font-size:11px;
+    font-weight:600; padding:9px 12px; text-align:right;
+    border-bottom:1px solid var(--border); position:sticky; top:49px; z-index:2;
+  }
+  td{padding:9px 12px; border-bottom:1px solid #1a1e28; vertical-align:middle}
+  tr:hover td{background:#1a1e28}
+  .sect-badge{
+    display:inline-block; padding:2px 8px; border-radius:5px;
+    font-size:10.5px; font-weight:700; background:var(--panel2);
+    border:1px solid var(--border); color:var(--muted);
+  }
+  .loading{padding:60px; text-align:center; color:var(--muted)}
+  ::-webkit-scrollbar{width:8px; height:8px}
+  ::-webkit-scrollbar-thumb{background:#2b3040; border-radius:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span> לא חידשו מנוי</h1>
+  <a href="index.html" class="nav-btn">← חזרה לטראקר</a>
+</header>
+
+<div class="upload-area">
+  <div class="upload-box" id="lastBox" onclick="document.getElementById('lastFile').click()">
+    <div class="icon">📂</div>
+    <div class="label">עונה קודמת</div>
+    <div class="sub">ייצוא כרטיסי מנוי מהעונה הקודמת</div>
+    <div class="count" id="lastCount"></div>
+    <input type="file" id="lastFile" accept=".csv,.xlsx,.xls" onchange="handleFile('last', this)">
+  </div>
+  <div class="upload-box" id="currBox" onclick="document.getElementById('currFile').click()">
+    <div class="icon">📂</div>
+    <div class="label">עונה נוכחית</div>
+    <div class="sub">ייצוא כרטיסי מנוי מהעונה הנוכחית</div>
+    <div class="count" id="currCount"></div>
+    <input type="file" id="currFile" accept=".csv,.xlsx,.xls" onchange="handleFile('curr', this)">
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn btn-primary" id="compareBtn" onclick="compare()" disabled>השווה ➜</button>
+  <button class="btn btn-export" id="exportBtn" onclick="exportCsv()" style="display:none">ייצא CSV</button>
+  <span class="status-bar" id="statusBar"></span>
+</div>
+
+<div class="results" id="results"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var lastData = null, currData = null, notRenewed = [];
+
+function handleFile(which, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true,
+      complete: function(r) { processData(which, r.data); }
+    });
+  } else {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var wb = XLSX.read(e.target.result, {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      processData(which, data);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function processData(which, rows) {
+  // Filter: VALID season tickets, exclude transfers/rebookings
+  var filtered = rows.filter(function(r) {
+    var status = String(r['status']||'').toUpperCase();
+    var origin = String(r['origin']||'').toLowerCase();
+    var ticketName = String(r['ticketName']||r['ticket.name']||'');
+    if (status !== 'VALID') return false;
+    if (origin === 'transfer') return false;
+    return true;
+  });
+
+  if (which === 'last') {
+    lastData = filtered;
+    document.getElementById('lastBox').classList.add('loaded');
+    document.getElementById('lastCount').textContent = filtered.length + ' כרטיסים';
+  } else {
+    currData = filtered;
+    document.getElementById('currBox').classList.add('loaded');
+    document.getElementById('currCount').textContent = filtered.length + ' כרטיסים';
+  }
+
+  if (lastData && currData) {
+    document.getElementById('compareBtn').disabled = false;
+  }
+}
+
+function normalize(s) { return String(s||'').trim().toLowerCase(); }
+
+function compare() {
+  document.getElementById('statusBar').textContent = 'מחשב...';
+  notRenewed = [];
+
+  // Build lookup of current season by customerId and email
+  var currByCustomerId = {};
+  var currByEmail = {};
+  currData.forEach(function(r) {
+    var cid = normalize(r['customerId']);
+    var email = normalize(r['email']);
+    if (cid) currByCustomerId[cid] = true;
+    if (email) currByEmail[email] = true;
+  });
+
+  // Find last season customers not in current season
+  lastData.forEach(function(r) {
+    var cid = normalize(r['customerId']);
+    var email = normalize(r['email']);
+    var name = String(r['name']||r['customer.name']||'').trim();
+    var section = String(r['seat.section']||'').trim();
+    var row = String(r['seat.row']||'').trim();
+    var seat = String(r['seat.seat']||'').trim();
+
+    // Skip east stand (מזרחי) and non-seated
+    if (section.includes('מזרחי') || !section) return;
+
+    var renewed = false;
+    if (cid && currByCustomerId[cid]) renewed = true;
+    if (!renewed && email && currByEmail[email]) renewed = true;
+
+    if (!renewed) {
+      notRenewed.push({
+        name: name,
+        email: String(r['email']||'').trim(),
+        customerId: String(r['customerId']||'').trim(),
+        phone: String(r['customer.phone']||'').trim(),
+        section: section,
+        row: row,
+        seat: seat,
+      });
+    }
+  });
+
+  // Sort by section, row, seat
+  notRenewed.sort(function(a,b) {
+    if (a.section !== b.section) return a.section.localeCompare(b.section);
+    if (a.row !== b.row) return parseInt(a.row||0) - parseInt(b.row||0);
+    return parseInt(a.seat||0) - parseInt(b.seat||0);
+  });
+
+  renderResults();
+  document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו';
+  document.getElementById('exportBtn').style.display = '';
+}
+
+var filtered = [];
+function renderResults() {
+  var q = (document.getElementById('searchInput')||{}).value || '';
+  q = q.trim().toLowerCase();
+  filtered = q ? notRenewed.filter(function(r) {
+    return r.name.toLowerCase().includes(q) ||
+           r.email.toLowerCase().includes(q) ||
+           r.section.toLowerCase().includes(q) ||
+           r.phone.includes(q);
+  }) : notRenewed;
+
+  // Group by section for summary
+  var bySec = {};
+  notRenewed.forEach(function(r) { bySec[r.section] = (bySec[r.section]||0)+1; });
+  var secList = Object.keys(bySec).sort();
+
+  var html = '<div class="summary-pills">';
+  html += '<span class="pill red">לא חידשו: ' + notRenewed.length + '</span>';
+  html += '<span class="pill yellow">מוצגים: ' + filtered.length + '</span>';
+  secList.forEach(function(s) {
+    html += '<span class="pill">' + s + ': ' + bySec[s] + '</span>';
+  });
+  html += '</div>';
+
+  html += '<input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל / יציע..." oninput="renderResults()" value="' + (q||'') + '">';
+
+  if (filtered.length === 0) {
+    html += '<div class="loading">לא נמצאו תוצאות</div>';
+  } else {
+    html += '<table><thead><tr>';
+    html += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th>';
+    html += '</tr></thead><tbody>';
+    filtered.forEach(function(r, i) {
+      html += '<tr>';
+      html += '<td style="color:var(--muted)">' + (i+1) + '</td>';
+      html += '<td><b>' + esc(r.name) + '</b></td>';
+      html += '<td style="color:var(--muted);font-size:11px">' + esc(r.email) + '</td>';
+      html += '<td style="color:var(--muted);font-size:11px">' + esc(r.phone) + '</td>';
+      html += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
+      html += '<td>' + esc(r.row) + '</td>';
+      html += '<td>' + esc(r.seat) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  document.getElementById('results').innerHTML = html;
+}
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function exportCsv() {
+  var rows = [['שם','אימייל','טלפון','customerId','יציע','שורה','מושב']];
+  notRenewed.forEach(function(r) {
+    rows.push([r.name, r.email, r.phone, r.customerId, r.section, r.row, r.seat]);
+  });
+  var csv = rows.map(function(r) {
+    return r.map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+  }).join('\n');
+  var bom = '\uFEFF';
+  var blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'not-renewed.csv';
+  a.click();
+}
+
+// Drag and drop support
+['lastBox','currBox'].forEach(function(id) {
+  var box = document.getElementById(id);
+  var which = id === 'lastBox' ? 'last' : 'curr';
+  var input = document.getElementById(which === 'last' ? 'lastFile' : 'currFile');
+  box.addEventListener('dragover', function(e) { e.preventDefault(); box.classList.add('dragover'); });
+  box.addEventListener('dragleave', function() { box.classList.remove('dragover'); });
+  box.addEventListener('drop', function(e) {
+    e.preventDefault(); box.classList.remove('dragover');
+    var file = e.dataTransfer.files[0];
+    if (file) { input.files = e.dataTransfer.files; handleFile(which, input); }
+  });
+});
+</script>
+</body>
+</html>
