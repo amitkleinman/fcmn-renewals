@@ -138,12 +138,10 @@ function renderMap(section){
 
   const statsDiv = document.createElement('div');
   statsDiv.className = 'map-stats';
-  statsDiv.innerHTML = `
-    <span><b>${total}</b> מקומות</span>
-    <span>מנויים: <b style="color:#d9baf5">${taken}</b></span>
-    ${gameTaken > 0 ? `<span>כרטיסי משחק: <b style="color:#f5c518">${gameTaken}</b></span>` : ''}
-    <span>פנויים: <b style="color:var(--muted)">${empty}</b></span>
-  `;
+  statsDiv.innerHTML = '<span><b>' + total + '</b> מקומות</span>' +
+    '<span>מנויים: <b style="color:#d9baf5">' + taken + '</b></span>' +
+    (gameTaken > 0 ? '<span>כרטיסי משחק: <b style="color:#f5c518">' + gameTaken + '</b></span>' : '') +
+    '<span>פנויים: <b style="color:var(--muted)">' + empty + '</b></span>';
   panel.appendChild(statsDiv);
 
   const legend = document.createElement('div');
@@ -219,7 +217,6 @@ const db = firebase.firestore();
 // Live seatStatus from Firestore
 let liveStatus = {}; // key: SECTION|row|seat → {name} - season tickets (green)
 let gameSeats = {};  // key: SECTION|row|seat → {name} - game tickets (yellow)
-"SECTION|row|seat" -> {name}
 
 db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
   liveStatus = {};
