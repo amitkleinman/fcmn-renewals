@@ -92,6 +92,8 @@
   ::-webkit-scrollbar{width:8px; height:8px}
   ::-webkit-scrollbar-thumb{background:#2b3040; border-radius:6px}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -134,6 +136,14 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+// Firebase
+firebase.initializeApp({
+  apiKey:"AIzaSyCUSlbN3FKmi2h8grZo6ciZOkAS9LfVcQw",
+  authDomain:"fcmn-renewals-26-27.firebaseapp.com",
+  projectId:"fcmn-renewals-26-27"
+});
+const db = firebase.firestore();
+
 var lastData = null, currData = null, tagData = null, notRenewed = [];
 
 function handleFile(which, input) {
@@ -217,6 +227,7 @@ function compare() {
   }
 
   // Find last season customers not in current season
+  var seenCid = {}, seenEmail = {};
   lastData.forEach(function(r) {
     var cid = normalize(r['customerId']);
     var email = normalize(r['email']);
@@ -234,7 +245,12 @@ function compare() {
     if (!renewed && cid && tagByCustomerId[cid]) renewed = true;
     if (!renewed && email && tagByEmail[email]) renewed = true;
 
+    // Deduplicate by customerId, fallback by email
     if (!renewed) {
+      if (cid && seenCid[cid]) return;
+      if (!cid && email && seenEmail[email]) return;
+      if (cid) seenCid[cid] = true;
+      if (email) seenEmail[email] = true;
       notRenewed.push({
         name: name,
         email: String(r['email']||'').trim(),
@@ -256,6 +272,11 @@ function compare() {
 
   renderResults();
   document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו';
+  // Write count to Firestore so tracker picks it up
+  db.collection('meta').doc('stats').update({
+    notRenewedCount: notRenewed.length,
+    notRenewedUpdated: new Date().toISOString()
+  }).catch(function(e){ console.warn('Firestore update failed:', e); });
   document.getElementById('exportBtn').style.display = '';
 }
 
