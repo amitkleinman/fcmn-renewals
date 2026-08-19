@@ -224,7 +224,7 @@ db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
     var data = snap.data();
     Object.keys(data).forEach(function(key) {
       var val = data[key];
-      liveStatus[key] = { name: val.name || '' };
+      liveStatus[key.toUpperCase()] = { name: val.name || '' };
     });
   }
   renderTabs();
@@ -233,7 +233,7 @@ db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
 });
 
 // Subscribe to active game for game seat status
-const VIP_SECTIONS = ['R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
+const VIP_SECTIONS = ['PLATINUM','R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
 let gameUnsub = null;
 db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
   if (gameUnsub) { gameUnsub(); gameUnsub = null; }
@@ -250,9 +250,9 @@ db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
       // gameSeatStatus is a map of SECTION|row|seat → {name}
       const gss = d.gameSeatStatus || {};
       Object.keys(gss).forEach(function(key) {
-        const parts = key.split('|');
+        const parts = key.toUpperCase().split('|');
         if (parts.length === 3 && VIP_SECTIONS.includes(parts[0])) {
-          gameSeats[key] = gss[key];
+          gameSeats[key.toUpperCase()] = gss[key];
         }
       });
     }
