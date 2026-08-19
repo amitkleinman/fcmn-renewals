@@ -219,17 +219,16 @@ function showGameFreeList(section) {
   var rawList = gameCounts[section + '_freeNames'];
   var list = [];
   if (rawList) {
-    if (rawList.arrayValue) {
+    if (Array.isArray(rawList)) {
+      // Plain array (Firebase compat SDK)
+      list = rawList;
+    } else if (rawList.arrayValue) {
       // Firestore REST format
       list = (rawList.arrayValue.values || []).map(function(v) {
         var f = (v.mapValue && v.mapValue.fields) || {};
         return { name: (f.name && f.name.stringValue) || '', email: (f.email && f.email.stringValue) || '' };
       });
-    } else if (Array.isArray(rawList)) {
-      // Plain array (JS SDK format)
-      list = rawList;
     } else if (typeof rawList === 'object') {
-      // Firebase compat SDK returns plain objects
       list = Object.values(rawList).filter(function(v){ return v && typeof v === 'object' && v.name; });
     }
   }
