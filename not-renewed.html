@@ -148,6 +148,28 @@ const db = firebase.firestore();
 
 var lastData = null, currData = null, tagData = null, notRenewed = [];
 
+// Load last results from Firestore on page load
+db.collection('meta').doc('notRenewedList').get().then(function(snap) {
+  if (!snap.exists) return;
+  var d = snap.data();
+  if (!d.list || !d.list.length) return;
+  notRenewed = d.list.map(function(r) {
+    return {
+      name: r.name || '',
+      email: r.email || '',
+      customerId: r.customerId || '',
+      phone: r.phone || '',
+      section: r.section || '',
+      row: r.row || '',
+      seat: r.seat || ''
+    };
+  });
+  var updatedAt = d.updatedAt ? new Date(d.updatedAt).toLocaleString('he-IL', {timeZone:'Asia/Jerusalem',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו' + (updatedAt ? ' · עודכן ' + updatedAt : '');
+  document.getElementById('exportBtn').style.display = '';
+  renderResults();
+}).catch(function(e){ console.warn('Could not load notRenewedList:', e); });
+
 function handleFile(which, input) {
   var file = input.files[0];
   if (!file) return;
