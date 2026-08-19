@@ -321,6 +321,25 @@ processBtn.addEventListener('click', async ()=>{
     for(const [sec, names] of Object.entries(freeNames)){
       gameSeating[sec+'_freeNames'] = names;
     }
+    // Per-seat tracking for VIP box sections
+    const VIP_BOX_SECTIONS = ['R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
+    const gameSeatStatus = {};
+    for(const row of parsedData){
+      const sec = String(row['seat.section']||row['sectionName']||'').trim().toUpperCase();
+      if(!VIP_BOX_SECTIONS.includes(sec)) continue;
+      const origin = String(row['origin']||'').toLowerCase();
+      const tName = String(row['ticketName']||'');
+      if(origin === 'transfer' || tName.includes('מנוי')) continue;
+      const rowNum = String(row['seat.row']||row['rowName']||'').trim();
+      const seatNum = String(row['seat.seat']||row['seatName']||'').trim();
+      if(!rowNum || !seatNum) continue;
+      const key = `${sec}|${rowNum}|${seatNum}`;
+      gameSeatStatus[key] = { name: String(row['name']||'').trim(), status: 'sold' };
+    }
+    if(Object.keys(gameSeatStatus).length > 0){
+      gameSeating['gameSeatStatus'] = gameSeatStatus;
+      addLogG(`✓ VIP מושבים: ${Object.keys(gameSeatStatus).length} מושבים`, 'ok');
+    }
     if(Object.keys(gameSeating).length > 0){
       await setDoc(doc(db,'gameSeating',gameId), gameSeating);
       addLogG(`✓ עודכן gameSeating: ${Object.keys(gameSeating).filter(k=>k.endsWith('_paid')).length} יציעים בתשלום`, 'ok');
