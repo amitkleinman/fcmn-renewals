@@ -771,7 +771,7 @@ function refreshSeatMap(section, container){
     `<span>תכולת יציע: <b style="color:var(--accent)">${ns}/${cap} (${capPct}%)</b></span>` +
     `<span>מנויים שנה שעברה: <b>${total}</b></span>` +
     `<span>חידשו: <b style="color:var(--accent2)">${renewed}</b></span>` +
-    `<span>לא חידשו: <b style="color:var(--danger)">${total-renewed}</b></span>` +
+    `<span>לא חידשו: <a href="not-renewed.html" style="color:var(--danger);font-weight:700;text-decoration:none" title="פתח דף לא חידשו">${total-renewed}</a></span>` +
     `<span>אחוז חידוש: <b>${renewPct}%</b></span>`;
 }
 
