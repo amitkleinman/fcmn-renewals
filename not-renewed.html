@@ -117,8 +117,7 @@
 <body>
 
 <header>
-  <h1><span class="dot"></span> לא חידשו מנוי</h1>
-  <a href="index.html" class="nav-btn">← חזרה לטראקר</a>
+  <h1><span class="dot" ondblclick="window.location='index.html'" style="cursor:default"></span> לא חידשו מנוי</h1>
 </header>
 
 <div class="upload-area">
@@ -405,12 +404,18 @@ function renderResults(sectionClick) {
       html += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
       html += '<td>' + esc(r.row) + '</td>';
       html += '<td>' + esc(r.seat) + '</td>';
-      var statusClass = ['','s1','s2','s3','s4','s5'][['','מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'].indexOf(r.status||'')];
-      html += '<td><select class="status-select ' + (statusClass||'') + '" onchange="updateField('' + esc(r.customerId||r.email) + '', 'status', this.value, this)">' +
-        '<option value="">—</option>' +
-        ['מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'].map(function(s){ return '<option value="' + s + '"' + (r.status===s?' selected':'') + '>' + s + '</option>'; }).join('') +
-        '</select></td>';
-      html += '<td><input class="notes-input" type="text" placeholder="הערה..." value="' + esc(r.notes||'') + '" onchange="updateField('' + esc(r.customerId||r.email) + '', 'notes', this.value, null)"></td>';
+      var statusValues = ['מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'];
+      var statusColors = {'מחכה לשיחה':'s1','לא מעוניין':'s2','לא עונה':'s3','חידש':'s4','אחר':'s5'};
+      var statusClass = statusColors[r.status||''] || '';
+      var cidKey = esc(r.customerId || r.email);
+      var selectHtml = '<select class="status-select ' + statusClass + '" onchange="updateField(\''+cidKey+'\', \'status\', this.value, this)">';
+      selectHtml += '<option value="">—</option>';
+      statusValues.forEach(function(sv) {
+        selectHtml += '<option value="' + sv + '"' + (r.status===sv ? ' selected' : '') + '>' + sv + '</option>';
+      });
+      selectHtml += '</select>';
+      html += '<td>' + selectHtml + '</td>';
+      html += '<td><input class="notes-input" type="text" placeholder="הערה..." value="' + esc(r.notes||'') + '" onchange="updateField(\''+cidKey+'\', \'notes\', this.value, null)"></td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
