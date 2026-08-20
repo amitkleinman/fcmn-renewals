@@ -150,6 +150,7 @@
 <div class="controls">
   <button class="btn btn-primary" id="compareBtn" onclick="compare()" disabled>השווה ➜</button>
   <button class="btn btn-export" id="exportBtn" onclick="exportCsv()" style="display:none">ייצא CSV</button>
+  <button class="btn" onclick="fetchSheet(function(){applySheetData();renderResults();})" style="background:var(--panel2);color:var(--muted);border:1px solid var(--border)">🔄 רענן גיליון</button>
   <span class="status-bar" id="statusBar"></span>
 </div>
 
@@ -166,6 +167,47 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 var lastData = null, currData = null, tagData = null, notRenewed = [];
+
+var SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT22UZ2SrsEEio_OJNwlhlkj3LbVWbrI131DOtOe2qdoOjql3HuH5E9rP4n8sqyHP3MKLO6Z5lrlUQV/pub?output=csv';
+var sheetData = {}; // key: email or name|section|seat -> {status, notes}
+
+function fetchSheet(callback) {
+  Papa.parse(SHEET_URL, {
+    download: true,
+    header: false,
+    skipEmptyLines: true,
+    complete: function(r) {
+      sheetData = {};
+      r.data.forEach(function(row, i) {
+        if (i === 0) return; // skip header
+        var name  = String(row[0]||'').trim();
+        var email = String(row[1]||'').trim().toLowerCase();
+        var section = String(row[3]||'').trim();
+        var rowNum  = String(row[4]||'').trim();
+        var seat    = String(row[5]||'').trim();
+        var status  = String(row[6]||'').trim();
+        var notes   = String(row[7]||'').trim();
+        var val = { status: status, notes: notes };
+        if (email) sheetData['email:' + email] = val;
+        if (name && section && seat) sheetData['seat:' + name + '|' + section + '|' + seat] = val;
+      });
+      if (callback) callback();
+    },
+    error: function(e) { console.warn('Sheet fetch failed:', e); if (callback) callback(); }
+  });
+}
+
+function applySheetData() {
+  notRenewed.forEach(function(r) {
+    var key = 'email:' + (r.email||'').toLowerCase();
+    var match = sheetData[key];
+    if (!match) match = sheetData['seat:' + r.name + '|' + r.section + '|' + r.seat];
+    if (match) {
+      if (match.status) r.status = match.status;
+      if (match.notes) r.notes = match.notes;
+    }
+  });
+}
 
 // Load last results from Firestore on page load
 db.collection('meta').doc('notRenewedList').get().then(function(snap) {
@@ -188,7 +230,10 @@ db.collection('meta').doc('notRenewedList').get().then(function(snap) {
   var updatedAt = d.updatedAt ? new Date(d.updatedAt).toLocaleString('he-IL', {timeZone:'Asia/Jerusalem',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו' + (updatedAt ? ' · עודכן ' + updatedAt : '');
   document.getElementById('exportBtn').style.display = '';
-  renderResults();
+  fetchSheet(function() {
+    applySheetData();
+    renderResults();
+  });
 }).catch(function(e){ console.warn('Could not load notRenewedList:', e); });
 
 function handleFile(which, input) {
@@ -322,6 +367,10 @@ function compare() {
   });
 
   renderResults();
+  fetchSheet(function() {
+    applySheetData();
+    renderResults();
+  });
   document.getElementById('statusBar').textContent = notRenewed.length + ' לא חידשו';
   // Write count + full list to Firestore
   var listForFirestore = notRenewed.map(function(r) {
