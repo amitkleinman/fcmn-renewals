@@ -102,7 +102,7 @@
   .status-select.s2{border-color:var(--danger); color:var(--danger)}
   .status-select.s3{border-color:var(--muted); color:var(--muted)}
   .status-select.s4{border-color:var(--accent2); color:var(--accent2)}
-  .status-select.s5{border-color:var(--accent); color:var(--accent)}
+  .status-select.s5{border-color:#fb923c; color:#fb923c}
   .notes-input{
     background:var(--panel2); border:1px solid var(--border); color:var(--text);
     border-radius:6px; padding:4px 8px; font-size:11px; font-family:inherit;
@@ -338,7 +338,7 @@ function compare() {
   document.getElementById('exportBtn').style.display = '';
 }
 
-var STATUS_COLORS = {'לא מעוניין':'s1','לא עונה':'s2','חידש':'s3','אחר':'s4'};
+var STATUS_COLORS = {'לא מעוניין':'s1','לא עונה':'s2','נשלחה בקשה לתשלום':'s3','חידש':'s4','אחר':'s5'};
 
 function updateField(key, field, value, el) {
   // Update in local notRenewed array
@@ -436,8 +436,8 @@ function renderTable() {
       html2 += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
       html2 += '<td>' + esc(r.row) + '</td>';
       html2 += '<td>' + esc(r.seat) + '</td>';
-      var statusValues = ['לא מעוניין','לא עונה','חידש','אחר'];
-      var statusColors = {'לא מעוניין':'s1','לא עונה':'s2','חידש':'s3','אחר':'s4'};
+      var statusValues = ['לא מעוניין','לא עונה','נשלחה בקשה לתשלום','חידש','אחר'];
+      var statusColors = {'לא מעוניין':'s1','לא עונה':'s2','נשלחה בקשה לתשלום':'s3','חידש':'s4','אחר':'s5'};
       var statusClass = statusColors[r.status||''] || '';
       var cidKey = esc(r.customerId || r.email);
       var selectHtml = '<select class="status-select ' + statusClass + '" onchange="updateField(\''+cidKey+'\', \'status\', this.value, this)">';
