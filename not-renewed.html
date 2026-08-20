@@ -144,6 +144,9 @@
   </div>
 </div>
 
+<div style="padding:0 20px 12px">
+  <input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל..." oninput="renderTable()" style="display:none">
+</div>
 <div class="controls">
   <button class="btn btn-primary" id="compareBtn" onclick="compare()" disabled>השווה ➜</button>
   <button class="btn btn-export" id="exportBtn" onclick="exportCsv()" style="display:none">ייצא CSV</button>
@@ -280,7 +283,8 @@ function compare() {
 
     // Skip east stand, VIP and non-seated
     var VIP_SECTIONS = ['PLATINUM','R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
-    if (section.includes('מזרחי') || !section || VIP_SECTIONS.includes(section.toUpperCase())) return;
+    var sectionUpper = section.toUpperCase().trim();
+    if (!sectionUpper || sectionUpper.includes('מזרחי') || VIP_SECTIONS.some(function(v){ return sectionUpper === v || sectionUpper.includes(v); })) return;
 
     var renewed = false;
     if (cid && currByCustomerId[cid]) renewed = true;
@@ -398,24 +402,40 @@ function renderResults(sectionClick) {
   html += '<span class="pill" style="cursor:pointer;' + (statusFilter==='without' ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="statusFilter=(statusFilter===\'without\'?\'\':\'without\');renderResults()">ללא סטטוס: ' + totalNoStatus + '</span>';
   html += '</div>';
 
-  html += '<input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל / יציע..." oninput="renderResults(undefined)" value="' + (q||'') + '">';
+  document.getElementById('results').innerHTML = html;
+  document.getElementById('searchInput').style.display = '';
 
+  renderTable();
+}
+
+function renderTable() {
+  var q = (document.getElementById('searchInput')||{}).value || '';
+  q = q.trim().toLowerCase();
+  var activeSec = activeSectionFilter;
+  filtered = notRenewed.filter(function(r) {
+    if (activeSec && r.section !== activeSec) return false;
+    if (statusFilter === 'with' && !r.status) return false;
+    if (statusFilter === 'without' && r.status) return false;
+    if (!q) return true;
+    return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || r.phone.includes(q);
+  });
+  var html2 = '';
   if (filtered.length === 0) {
-    html += '<div class="loading">לא נמצאו תוצאות</div>';
+    html2 += '<div class="loading">לא נמצאו תוצאות</div>';
   } else {
-    html += '<table><thead><tr>';
-    html += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th><th>סטטוס</th><th>הערות</th>';
-    html += '</tr></thead><tbody>';
+    html2 += '<table><thead><tr>';
+    html2 += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th><th>סטטוס</th><th>הערות</th>';
+    html2 += '</tr></thead><tbody>';
     filtered.forEach(function(r, i) {
       var rowStyle = (r.status === 'לא מעוניין') ? ' style="background:#2a1515"' : '';
-      html += '<tr' + rowStyle + '>';
-      html += '<td style="color:var(--muted)">' + (i+1) + '</td>';
-      html += '<td><b>' + esc(r.name) + '</b></td>';
-      html += '<td style="color:var(--muted);font-size:11px">' + esc(r.email) + '</td>';
-      html += '<td style="color:var(--muted);font-size:11px">' + esc(r.phone) + '</td>';
-      html += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
-      html += '<td>' + esc(r.row) + '</td>';
-      html += '<td>' + esc(r.seat) + '</td>';
+      html2 += '<tr' + rowStyle + '>';
+      html2 += '<td style="color:var(--muted)">' + (i+1) + '</td>';
+      html2 += '<td><b>' + esc(r.name) + '</b></td>';
+      html2 += '<td style="color:var(--muted);font-size:11px">' + esc(r.email) + '</td>';
+      html2 += '<td style="color:var(--muted);font-size:11px">' + esc(r.phone) + '</td>';
+      html2 += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
+      html2 += '<td>' + esc(r.row) + '</td>';
+      html2 += '<td>' + esc(r.seat) + '</td>';
       var statusValues = ['לא מעוניין','לא עונה','חידש','אחר'];
       var statusColors = {'לא מעוניין':'s1','לא עונה':'s2','חידש':'s3','אחר':'s4'};
       var statusClass = statusColors[r.status||''] || '';
@@ -426,14 +446,20 @@ function renderResults(sectionClick) {
         selectHtml += '<option value="' + sv + '"' + (r.status===sv ? ' selected' : '') + '>' + sv + '</option>';
       });
       selectHtml += '</select>';
-      html += '<td>' + selectHtml + '</td>';
-      html += '<td><input class="notes-input" type="text" placeholder="הערה..." value="' + esc(r.notes||'') + '" onchange="updateField(\''+cidKey+'\', \'notes\', this.value, null)"></td>';
-      html += '</tr>';
+      html2 += '<td>' + selectHtml + '</td>';
+      html2 += '<td><input class="notes-input" type="text" placeholder="הערה..." value="' + esc(r.notes||'') + '" onchange="updateField(\''+cidKey+'\', \'notes\', this.value, null)"></td>';
+      html2 += '</tr>';
     });
-    html += '</tbody></table>';
+    html2 += '</tbody></table>';
   }
-
-  document.getElementById('results').innerHTML = html;
+  var tableDiv = document.getElementById('tableDiv');
+  if (!tableDiv) {
+    var d = document.createElement('div');
+    d.id = 'tableDiv';
+    document.getElementById('results').appendChild(d);
+    tableDiv = d;
+  }
+  tableDiv.innerHTML = html2;
 }
 
 function esc(s) {
