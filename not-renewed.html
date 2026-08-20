@@ -278,8 +278,9 @@ function compare() {
     var row = String(r['seat.row']||'').trim();
     var seat = String(r['seat.seat']||'').trim();
 
-    // Skip east stand (מזרחי) and non-seated
-    if (section.includes('מזרחי') || !section) return;
+    // Skip east stand, VIP and non-seated
+    var VIP_SECTIONS = ['PLATINUM','R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
+    if (section.includes('מזרחי') || !section || VIP_SECTIONS.includes(section.toUpperCase())) return;
 
     var renewed = false;
     if (cid && currByCustomerId[cid]) renewed = true;
@@ -333,7 +334,7 @@ function compare() {
   document.getElementById('exportBtn').style.display = '';
 }
 
-var STATUS_COLORS = {'מחכה לשיחה':'s1','לא מעוניין':'s2','לא עונה':'s3','חידש':'s4','אחר':'s5'};
+var STATUS_COLORS = {'לא מעוניין':'s1','לא עונה':'s2','חידש':'s3','אחר':'s4'};
 
 function updateField(key, field, value, el) {
   // Update in local notRenewed array
@@ -356,6 +357,7 @@ function updateField(key, field, value, el) {
 }
 
 var activeSectionFilter = '';
+var statusFilter = '';
 
 var filtered = [];
 function renderResults(sectionClick) {
@@ -366,6 +368,8 @@ function renderResults(sectionClick) {
   q = q.trim().toLowerCase();
   filtered = notRenewed.filter(function(r) {
     if (activeSectionFilter && r.section !== activeSectionFilter) return false;
+    if (statusFilter === 'with' && !r.status) return false;
+    if (statusFilter === 'without' && r.status) return false;
     if (!q) return true;
     return r.name.toLowerCase().includes(q) ||
            r.email.toLowerCase().includes(q) ||
@@ -386,6 +390,13 @@ function renderResults(sectionClick) {
     html += '<span class="pill" style="cursor:pointer;' + (active ? 'border-color:var(--accent);color:var(--accent);background:var(--panel2)' : '') + '" onclick="renderResults(\'' + s + '\')">' + s + ': ' + bySec[s] + '</span>';
   });
   html += '</div>';
+  // Status filter buttons
+  var totalWithStatus = notRenewed.filter(function(r){ return r.status && r.section; }).length;
+  var totalNoStatus = notRenewed.filter(function(r){ return !r.status; }).length;
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<span class="pill" style="cursor:pointer;' + (statusFilter==='with' ? 'border-color:var(--accent2);color:var(--accent2)' : '') + '" onclick="statusFilter=(statusFilter===\'with\'?\'\':\'with\');renderResults()">עם סטטוס: ' + totalWithStatus + '</span>';
+  html += '<span class="pill" style="cursor:pointer;' + (statusFilter==='without' ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="statusFilter=(statusFilter===\'without\'?\'\':\'without\');renderResults()">ללא סטטוס: ' + totalNoStatus + '</span>';
+  html += '</div>';
 
   html += '<input class="search-bar" id="searchInput" placeholder="חיפוש לפי שם / אימייל / יציע..." oninput="renderResults(undefined)" value="' + (q||'') + '">';
 
@@ -396,7 +407,8 @@ function renderResults(sectionClick) {
     html += '<th>#</th><th>שם</th><th>אימייל</th><th>טלפון</th><th>יציע</th><th>שורה</th><th>מושב</th><th>סטטוס</th><th>הערות</th>';
     html += '</tr></thead><tbody>';
     filtered.forEach(function(r, i) {
-      html += '<tr>';
+      var rowStyle = (r.status === 'לא מעוניין') ? ' style="background:#2a1515"' : '';
+      html += '<tr' + rowStyle + '>';
       html += '<td style="color:var(--muted)">' + (i+1) + '</td>';
       html += '<td><b>' + esc(r.name) + '</b></td>';
       html += '<td style="color:var(--muted);font-size:11px">' + esc(r.email) + '</td>';
@@ -404,8 +416,8 @@ function renderResults(sectionClick) {
       html += '<td><span class="sect-badge">' + esc(r.section) + '</span></td>';
       html += '<td>' + esc(r.row) + '</td>';
       html += '<td>' + esc(r.seat) + '</td>';
-      var statusValues = ['מחכה לשיחה','לא מעוניין','לא עונה','חידש','אחר'];
-      var statusColors = {'מחכה לשיחה':'s1','לא מעוניין':'s2','לא עונה':'s3','חידש':'s4','אחר':'s5'};
+      var statusValues = ['לא מעוניין','לא עונה','חידש','אחר'];
+      var statusColors = {'לא מעוניין':'s1','לא עונה':'s2','חידש':'s3','אחר':'s4'};
       var statusClass = statusColors[r.status||''] || '';
       var cidKey = esc(r.customerId || r.email);
       var selectHtml = '<select class="status-select ' + statusClass + '" onchange="updateField(\''+cidKey+'\', \'status\', this.value, this)">';
