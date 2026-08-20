@@ -400,13 +400,6 @@ function renderResults(sectionClick) {
   html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
   html += '<span class="pill" style="cursor:pointer;' + (statusFilter==='with' ? 'border-color:var(--accent2);color:var(--accent2)' : '') + '" onclick="statusFilter=(statusFilter===\'with\'?\'\':\'with\');renderResults()">עם סטטוס: ' + totalWithStatus + '</span>';
   html += '<span class="pill" style="cursor:pointer;' + (statusFilter==='without' ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="statusFilter=(statusFilter===\'without\'?\'\':\'without\');renderResults()">ללא סטטוס: ' + totalNoStatus + '</span>';
-  var allStatuses = ['לא מעוניין','לא עונה','נשלחה בקשה לתשלום','חידש','אחר'];
-  allStatuses.forEach(function(sv) {
-    var count = notRenewed.filter(function(r){ return r.status === sv; }).length;
-    if (!count) return;
-    var active = statusFilter === sv;
-    html += '<span class="pill" style="cursor:pointer;' + (active ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="var s=\'' + sv + '\';statusFilter=(statusFilter===s?\'\'  :s);renderResults()">' + sv + ': ' + count + '</span>';
-  });
   html += '</div>';
 
   document.getElementById('results').innerHTML = html;
