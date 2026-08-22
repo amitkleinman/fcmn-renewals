@@ -275,13 +275,14 @@ processBtn.addEventListener('click', async ()=>{
     let westernLower=0,westernUpper=0,honor=0,mongash=0,total=0;
     let westernLowerRevenue=0,westernUpperRevenue=0,honorRevenue=0,mongashRevenue=0;
     const ordersList=[];
+    let mizrahiPaidCount=0;
     for(const row of parsedData){
       const cat=String(row['category']||row['categoryName']||'').trim();
       const price=row['price'];
       const name=String(row['name']||'').trim();
       const hasPrice=price!==null&&price!==undefined&&price!==''&&!isNaN(Number(price))&&Number(price)>0;
       const priceVal=hasPrice?Number(price):0;
-      if(cat.includes('מזרחי')) { if(hasPrice) gameSeating['mizrahi_paid'] = (gameSeating['mizrahi_paid']||0)+1; continue; } // count מזרחי separately
+      if(cat.includes('מזרחי')) { if(hasPrice) mizrahiPaidCount++; continue; } // count מזרחי separately
       const origin = String(row['origin']||'').toLowerCase();
       const tName = String(row['ticketName']||'');
       if(origin === 'transfer' || tName.includes('מנוי עונתי')) continue; // skip transfers
@@ -324,6 +325,7 @@ processBtn.addEventListener('click', async ()=>{
     }
     // Per-seat tracking for VIP box sections
     const VIP_BOX_SECTIONS = ['R1','R2','R3','R4','R5','R6','R7','R8','L1','L2','L3','L4','L5','L6','L7','L8'];
+    if(mizrahiPaidCount > 0) gameSeating['mizrahi_paid'] = mizrahiPaidCount;
     const gameSeatStatus = {};
     for(const row of parsedData){
       const sec = String(row['seat.section']||row['sectionName']||'').trim().toUpperCase();
