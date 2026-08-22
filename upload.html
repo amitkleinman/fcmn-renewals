@@ -281,7 +281,7 @@ processBtn.addEventListener('click', async ()=>{
       const name=String(row['name']||'').trim();
       const hasPrice=price!==null&&price!==undefined&&price!==''&&!isNaN(Number(price))&&Number(price)>0;
       const priceVal=hasPrice?Number(price):0;
-      if(cat.includes('מזרחי')) continue; // skip away team
+      if(cat.includes('מזרחי')) { if(hasPrice) gameSeating['mizrahi_paid'] = (gameSeating['mizrahi_paid']||0)+1; continue; } // count מזרחי separately
       const origin = String(row['origin']||'').toLowerCase();
       const tName = String(row['ticketName']||'');
       if(origin === 'transfer' || tName.includes('מנוי עונתי')) continue; // skip transfers
@@ -302,7 +302,8 @@ processBtn.addEventListener('click', async ()=>{
     const freeNames = {};
     for(const row of parsedData){
       const sec = String(row['seat.section']||row['sectionName']||'').trim();
-      if(!sec || String(row['category']||'').includes('מזרחי')) continue;
+      const isMizrahiSec = String(row['category']||row['categoryName']||'').includes('מזרחי') || ['501','502','503','504','505'].includes(sec);
+      if(!sec || isMizrahiSec) continue;
       const origin = String(row['origin']||'').toLowerCase();
       const tName = String(row['ticketName']||'');
       if(origin === 'transfer' || tName.includes('מנוי')) continue;
