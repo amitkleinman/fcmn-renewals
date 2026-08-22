@@ -470,6 +470,8 @@ function render() {
   var vipFreeGame = 0;
   VIP_SECS.forEach(function(s) { vipFreeGame += gameCounts[s+'_free']||0; });
 
+  var mizrahiPaid = gameCounts['mizrahi_paid'] || 0;
+
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
     '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
@@ -479,6 +481,7 @@ function render() {
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
     '<span>סה"כ משחק (ללא VIP): <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' +
     (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + vipFreeGame).toLocaleString() + '</b></span>' : '') +
+    (mizrahiPaid > 0 ? '<span>מזרחי: <b style="color:#f97316">' + mizrahiPaid.toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
