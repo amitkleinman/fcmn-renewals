@@ -147,12 +147,25 @@ function readExcel(file) {
   });
 }
 
+function parseDate(str) {
+  if (!str) return new Date(0);
+  // Handle dd/mm/yyyy or dd.mm.yyyy
+  const m = str.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+  return new Date(str);
+}
+function formatDate(str) {
+  const d = parseDate(str);
+  if (!d || isNaN(d)) return str;
+  return d.toLocaleDateString('he-IL', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
 async function loadGames() {
   try {
     const snap = await db.collection('gameReports').get();
     games = [];
     snap.forEach(d => games.push(d.data()));
-    games.sort((a,b) => a.date.localeCompare(b.date));
+    games.sort((a,b) => parseDate(a.date) - parseDate(b.date));
     renderTable();
   } catch(e) { console.error('Load error:', e); }
 }
@@ -283,7 +296,7 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   try {
     await db.collection('gameReports').doc(gameId).set(game);
     games.push(game);
-    games.sort((a,b) => a.date.localeCompare(b.date));
+    games.sort((a,b) => parseDate(a.date) - parseDate(b.date));
     renderTable();
     log('✓ המשחק נוסף לטבלה', 'ok');
   } catch(e) { log('שגיאה בשמירה: ' + e.message, 'err'); }
@@ -337,7 +350,7 @@ function renderTable() {
 
   window._gameData = games;
   tbody.innerHTML = games.map(function(g, i) { return '<tr>' +
-    '<td class="date">' + g.date + '</td>' +
+    '<td class="date">' + formatDate(g.date) + '</td>' +
     '<td class="name">' + g.opponent + '</td>' +
     '<td class="num sub">' + g.seasonEnt.toLocaleString() + '</td>' +
     '<td class="num sub">' + g.homeTicketEnt.toLocaleString() + '</td>' +
