@@ -37,7 +37,8 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🅿️ חניון מכבי נתניה</h1>
+  <h1><span class="dot" ondblclick="window.location='index.html'" style="cursor:default"></span> 🅿️ חניון מכבי נתניה</h1>
+  <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
 <!-- Parking Overview Map -->
@@ -112,8 +113,12 @@ const PARKING_B = {
       spots: Array.from({length:29},(_,i)=>({n:222+i*2,accessible:false}))
     },
     {
-      label: 'שורה אי-זוגית',
-      spots: Array.from({length:42},(_,i)=>({n:201+i*2,accessible:false}))
+      label: 'אי-זוגי א׳',
+      spots: Array.from({length:21},(_,i)=>({n:201+i*2,accessible:false}))
+    },
+    {
+      label: 'אי-זוגי ב׳',
+      spots: Array.from({length:21},(_,i)=>({n:243+i*2,accessible:false}))
     }
   ]
 };
@@ -229,7 +234,7 @@ function renderZone(zoneData) {
       const tip = document.createElement('div');
       tip.className = 'tip';
       tip.textContent = isTaken
-        ? (spotInfo?.name || s.name || 'תפוס')
+        ? (spotInfo?.name || s.name || 'תפוס') + (spotInfo?.email ? ' · ' + spotInfo.email : '')
         : 'מקום ' + s.n + (s.accessible ? ' · נגיש ♿' : '');
       el.appendChild(tip);
       rowEl.appendChild(el);
