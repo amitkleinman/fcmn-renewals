@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>ניהול משחקים - FCMN</title>
-  
 <style>
   :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f2330;--border:#2b3040;--text:#e8eaf0;--muted:#9aa3b5;--accent:#f5c518;--accent2:#2dd4a3;--danger:#ef5b5b;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -44,6 +43,7 @@
   <h1><span class="dot"></span> ניהול משחקים</h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
+
 <div class="add-game-form" id="addForm">
   <h3>+ הוסף משחק חדש</h3>
   <div class="form-grid">
@@ -135,12 +135,6 @@ async function loadGames(){
         </div>
       </div>
       <div class="game-card-body">
-        <div class="game-stat">מערבי תחתון: <span>${stats.westernLower||0}</span></div>
-        <div class="game-stat">מערבי עליון: <span>${stats.westernUpper||0}</span></div>
-        <div class="game-stat">כבוד: <span>${stats.honor||0}</span></div>
-        <div class="game-stat">הזמנות: <span>${stats.ordersCount||0}</span></div>
-        <div class="game-stat">סה"כ: <span>${stats.total||0}</span></div>
-        ${stats.totalRevenue?`<div class="game-stat">הכנסות: <span style="color:var(--accent2)">₪${stats.totalRevenue.toLocaleString()}</span></div>`:''}
         <div class="game-stat">Event ID: <span style="font-size:11px;font-family:monospace">${game.eventId||game.id}</span></div>
       </div>`;
 
