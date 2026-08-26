@@ -15,6 +15,7 @@
   .upload-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px}
   .upload-group label{font-size:12px;color:var(--muted)}
   .upload-group input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%}
+  .upload-group select{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%;cursor:pointer}
   .upload-group input[type=file]{background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:7px;font-size:12px;width:100%}
   .btn{padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none}
   .btn-primary{background:var(--accent);color:#14161c}
@@ -53,13 +54,11 @@
 
 <!-- Upload form -->
 <div class="upload-area">
-  <div class="upload-group">
-    <label>תאריך משחק</label>
-    <input type="date" id="gameDate" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%">
-  </div>
-  <div class="upload-group">
-    <label>יריב</label>
-    <input type="text" id="opponent" placeholder="הפועל ירושלים">
+  <div class="upload-group" style="min-width:220px">
+    <label>בחר משחק</label>
+    <select id="gameSelect" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;width:100%">
+      <option value="">טוען משחקים...</option>
+    </select>
   </div>
   <div class="upload-group">
     <label>קובץ כניסות (entrance report)</label>
@@ -158,16 +157,48 @@ async function loadGames() {
   } catch(e) { console.error('Load error:', e); }
 }
 
+// Load games from gamesConfig and populate dropdown
+async function loadGames() {
+  try {
+    const snap = await db.collection('gamesConfig').get();
+    const games = [];
+    snap.forEach(doc => { const d = doc.data(); if (d.eventId && d.name) games.push(d); });
+    // Sort by date ascending
+    games.sort((a, b) => {
+      const da = a.date ? new Date(a.date) : new Date(0);
+      const db2 = b.date ? new Date(b.date) : new Date(0);
+      return da - db2;
+    });
+    const sel = document.getElementById('gameSelect');
+    sel.innerHTML = '<option value="">-- בחר משחק --</option>';
+    const now = Date.now();
+    let nextIdx = -1;
+    games.forEach((g, i) => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify(g);
+      const d = g.date ? new Date(g.date) : null;
+      const dateStr = d ? d.toLocaleDateString('he-IL', {day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+      opt.textContent = g.name + (dateStr ? ' · ' + dateStr : '');
+      sel.appendChild(opt);
+      if (nextIdx === -1 && d && d.getTime() >= now - 86400000*1) nextIdx = i + 1; // +1 for blank option
+    });
+    if (nextIdx > 0) sel.selectedIndex = nextIdx;
+  } catch(e) { console.warn('Could not load games:', e); }
+}
+loadGames();
+
 document.getElementById('processBtn').addEventListener('click', async () => {
-  var rawDate = document.getElementById('gameDate').value.trim();
-  if(!rawDate){alert('נא לבחור תאריך');return;}
-  var dp=rawDate.split('-'); var date=dp[2]+'/'+dp[1]+'/'+dp[0];
-  const opponent = document.getElementById('opponent').value.trim();
+  const selVal = document.getElementById('gameSelect').value;
+  if (!selVal) { alert('נא לבחור משחק'); return; }
+  const selGame = JSON.parse(selVal);
+  const d = selGame.date ? new Date(selGame.date) : new Date();
+  const date = d.toLocaleDateString('he-IL', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const opponent = selGame.opponent || selGame.name || '';
   const entranceFile = document.getElementById('entranceFile').files[0];
   const ticketsFile = document.getElementById('ticketsFile').files[0];
 
   if (!opponent || !entranceFile) {
-    alert('נא למלא שם יריב ולהעלות קובץ כניסות');
+    alert('נא לבחור משחק ולהעלות קובץ כניסות');
     return;
   }
 
