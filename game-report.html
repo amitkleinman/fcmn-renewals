@@ -48,7 +48,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.1)</span></h1>
+  <h1><span class="dot"></span> ⚽ דוח משחקים <span style="font-size:11px;color:var(--muted);font-weight:400">(v3.2)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -93,14 +93,14 @@
       <tr>
         <th rowspan="2">תאריך</th>
         <th rowspan="2">יריב</th>
-        <th colspan="5" class="group">🚪 כניסות</th>
+        <th colspan="6" class="group">🚪 כניסות</th>
         <th rowspan="2" style="width:16px;background:transparent;border:none;padding:0"></th>
         <th colspan="6" class="group">🎫 כרטיסים</th>
         <th rowspan="2" style="width:16px;background:transparent;border:none;padding:0"></th>
         <th colspan="6" class="group" style="background:#1a2a1a;color:var(--accent2)">💰 הכנסות</th>
       </tr>
       <tr>
-        <th>מנויים</th><th>בית (כרטיס)</th><th>סה"כ בית</th><th>אורחים</th><th>סה"כ</th>
+        <th>מנויים</th><th>בית (כרטיס)</th><th>סה"כ בית</th><th>אורחים</th><th>אחר ✏️</th><th>סה"כ</th>
         <th>בית בתשלום</th><th>בית חינם</th><th>סה"כ בית</th><th>אורח בתשלום</th><th>אורח חינם</th><th>סה"כ כרטיסים</th>
         <th style="background:#1a2a1a">ברוטו (קובץ)</th>
         <th style="background:#1a2a1a">ברוטו (ידני)</th>
@@ -302,6 +302,18 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   } catch(e) { log('שגיאה בשמירה: ' + e.message, 'err'); }
 });
 
+async function editOther(idx) {
+  const g = games[idx];
+  const val = prompt('הזן כמות לחיסור (אחר):', g.otherEnt || 0);
+  if (val === null) return;
+  const num = parseInt(val) || 0;
+  g.otherEnt = num;
+  if (g.id) {
+    await db.collection('gameReports').doc(g.id).update({ otherEnt: num });
+  }
+  renderTable();
+}
+
 function renderTable() {
   const tbody = document.getElementById('reportBody');
   const actionsBar = document.getElementById('actionsBar');
@@ -356,7 +368,8 @@ function renderTable() {
     '<td class="num sub">' + g.homeTicketEnt.toLocaleString() + '</td>' +
     '<td class="num total">' + g.totalHomeEnt.toLocaleString() + '</td>' +
     '<td class="num away">' + g.awayEnt.toLocaleString() + '</td>' +
-    '<td class="num total">' + g.totalEnt.toLocaleString() + '</td>' +
+    '<td class="num" style="cursor:pointer;text-decoration:underline dotted;color:var(--muted)" onclick="editOther(' + i + ')">' + (g.otherEnt ? '-'+Number(g.otherEnt).toLocaleString() : '✏️') + '</td>' +
+    '<td class="num total">' + (g.totalEnt - (g.otherEnt||0)).toLocaleString() + '</td>' +
     '<td style="background:transparent;border:none;padding:0"></td>' +
     '<td class="num">' + g.homePaid.toLocaleString() + '</td>' +
     (function(){var ff=g.homeFreeFromFile!==undefined?g.homeFreeFromFile:g.homeFree;var diff=g.homeFree!==ff?' <span style="font-size:10px;color:var(--muted)">('+ff+' בקובץ)</span>':'';return '<td class="num free" style="cursor:pointer;text-decoration:underline dotted" onclick="showFreeList('+i+')">' + g.homeFree.toLocaleString() + diff + '</td>';})() +
