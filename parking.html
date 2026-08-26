@@ -234,7 +234,7 @@ function renderZone(zoneData) {
       const tip = document.createElement('div');
       tip.className = 'tip';
       tip.textContent = isTaken
-        ? (spotInfo?.name || s.name || 'תפוס') + (spotInfo?.email ? ' · ' + spotInfo.email : '')
+        ? (spotInfo?.name || s.name || 'תפוס')
         : 'מקום ' + s.n + (s.accessible ? ' · נגיש ♿' : '');
       el.appendChild(tip);
       rowEl.appendChild(el);
