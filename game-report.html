@@ -158,7 +158,7 @@ async function loadGames() {
 }
 
 // Load games from gamesConfig and populate dropdown
-async function loadGames() {
+async function loadGamesDropdown() {
   try {
     const snap = await db.collection('gamesConfig').get();
     const games = [];
@@ -185,7 +185,7 @@ async function loadGames() {
     if (nextIdx > 0) sel.selectedIndex = nextIdx;
   } catch(e) { console.warn('Could not load games:', e); }
 }
-loadGames();
+loadGamesDropdown();
 
 document.getElementById('processBtn').addEventListener('click', async () => {
   const selVal = document.getElementById('gameSelect').value;
