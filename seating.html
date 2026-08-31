@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.8)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.9)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -475,9 +475,9 @@ function render() {
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
     '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
-    (totGamePaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + totGamePaid.toLocaleString() + '</b></span>' : '') +
+    (totGamePaid > 0 || mizrahiPaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + (totGamePaid + mizrahiPaid).toLocaleString() + '</b></span>' : '') +
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
-    (totGame > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' : '') +
+    (totGame > 0 || mizrahiPaid > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + (totGame + mizrahiPaid).toLocaleString() + '</b></span>' : '') +
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
     '<span>סה"כ משחק (ללא VIP): <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' +
     (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + vipFreeGame).toLocaleString() + '</b></span>' : '') +
