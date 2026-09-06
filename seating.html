@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.1)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.2)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -446,6 +446,22 @@ function render() {
   var sPct=sTotCap>0?Math.round(sTotTaken/sTotCap*100):0;
   var sTotHeld=groupSumData.reduce(function(s,g){return s+(g.held||0);},0);
   sumFoot.innerHTML='<tr><td style="color:var(--accent)">סה"כ</td><td>'+sTotCap.toLocaleString()+'</td><td style="color:#6c9fd9">'+sTotSeason.toLocaleString()+'</td><td style="color:var(--accent2)">'+sTotPaid.toLocaleString()+'</td><td style="color:#a78bfa">'+sTotFree.toLocaleString()+'</td><td style="color:#fb923c">'+(sTotHeld>0?sTotHeld.toLocaleString()+' 🛒':'—')+'</td><td>'+sTotTaken.toLocaleString()+'</td><td style="color:var(--accent);font-weight:700">'+sTotRemain.toLocaleString()+'</td><td><span class="pb"><span class="pbf" style="width:'+sPct+'%;background:var(--accent2)"></span></span>'+sPct+'%</td></tr>';
+  // Add מזרחי row to summary table
+  var mizrahiRow = '';
+  if (mizrahiPaid > 0) {
+    mizrahiRow = '<tr style="border-top:2px solid var(--border)">' +
+      '<td style="color:#f97316">🏟️ מזרחי</td>' +
+      '<td style="color:var(--muted)">2,000</td>' +
+      '<td style="color:#6c9fd9">—</td>' +
+      '<td style="color:var(--accent2)">' + mizrahiPaid.toLocaleString() + '</td>' +
+      '<td style="color:#a78bfa">—</td>' +
+      '<td>—</td>' +
+      '<td>' + mizrahiPaid.toLocaleString() + '</td>' +
+      '<td style="color:var(--accent);font-weight:700">' + (2000 - mizrahiPaid).toLocaleString() + '</td>' +
+      '<td><span class="pb"><span class="pbf ok" style="width:' + Math.round(mizrahiPaid/20) + '%"></span></span>' + Math.round(mizrahiPaid/20) + '%</td>' +
+      '</tr>';
+  }
+  sumFoot.innerHTML = sumFoot.innerHTML + mizrahiRow;
   sumWrap.style.display = groupSumData.length ? 'block' : 'none';
   tfoot.innerHTML = '<tr>' +
     '<td style="text-align:right">סה"כ</td>' +
@@ -479,8 +495,7 @@ function render() {
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
     (totGame > 0 || mizrahiPaid > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + (totGame + mizrahiPaid).toLocaleString() + '</b></span>' : '') +
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
-    '<span>סה"כ משחק (ללא VIP): <b style="color:var(--accent2)">' + (totGame + mizrahiPaid).toLocaleString() + '</b></span>' +
-    (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + mizrahiPaid + vipFreeGame).toLocaleString() + '</b></span>' : '') +
+        (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + mizrahiPaid + vipFreeGame).toLocaleString() + '</b></span>' : '') +
     (mizrahiPaid > 0 ? '<span>מזרחי: <b style="color:#f97316">' + mizrahiPaid.toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
