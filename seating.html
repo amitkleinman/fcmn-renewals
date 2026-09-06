@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v4.9)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.1)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -208,7 +208,7 @@ function renderTotalsBar() {
   var total = (totalNewSeasonFromStats > 0 ? totalNewSeasonFromStats : (regularSeason + vipFromStatus)) + kosherCount;
   bar.style.display = 'flex';
   bar.innerHTML =
-    '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + regularSeason.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">מנויים: <b style="color:#6c9fd9">' + (totalNewSeasonFromStats + kosherCount).toLocaleString() + '</b></span>' +
     '<span style="font-size:11px;color:var(--muted)">VIP/Platinum: <b style="color:#a78bfa">' + vipCount.toLocaleString() + '</b></span>' +
     '<span style="font-size:11px;color:var(--muted)">כשר: <b style="color:var(--accent2)">' + kosherCount.toLocaleString() + '</b></span>' +
     '<span style="border-right:1px solid var(--border);padding-right:16px;font-size:11px;color:var(--muted)">סה"כ מנויים: <b style="color:var(--accent);font-size:15px">' + total.toLocaleString() + '</b></span>' +
@@ -474,13 +474,13 @@ function render() {
 
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
-    '<span style="font-size:11px;color:var(--muted)">מנויים (ללא VIP/כשר): <b style="color:#6c9fd9">' + totSeason.toLocaleString() + '</b></span>' +
+    '<span style="font-size:11px;color:var(--muted)">מנויים: <b style="color:#6c9fd9">' + (totalNewSeasonFromStats + kosherCount).toLocaleString() + '</b></span>' +
     (totGamePaid > 0 || mizrahiPaid > 0 ? '<span>משחק בתשלום: <b style="color:var(--accent2)">' + (totGamePaid + mizrahiPaid).toLocaleString() + '</b></span>' : '') +
     (totGameFree > 0 ? '<span>משחק חינם: <b style="color:#a78bfa">' + totGameFree.toLocaleString() + '</b></span>' : '') +
     (totGame > 0 || mizrahiPaid > 0 ? '<span>סה"כ משחק: <b style="color:var(--accent2)">' + (totGame + mizrahiPaid).toLocaleString() + '</b></span>' : '') +
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
-    '<span>סה"כ משחק (ללא VIP): <b style="color:var(--accent2)">' + totGame.toLocaleString() + '</b></span>' +
-    (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + vipFreeGame).toLocaleString() + '</b></span>' : '') +
+    '<span>סה"כ משחק (ללא VIP): <b style="color:var(--accent2)">' + (totGame + mizrahiPaid).toLocaleString() + '</b></span>' +
+    (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + mizrahiPaid + vipFreeGame).toLocaleString() + '</b></span>' : '') +
     (mizrahiPaid > 0 ? '<span>מזרחי: <b style="color:#f97316">' + mizrahiPaid.toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
