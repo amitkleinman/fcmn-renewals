@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.2)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.4)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -432,6 +432,8 @@ function render() {
   var totPct = Math.round((totTaken + totAcc + totSavedInGroups)/totCap*100);
   var totRemainFinal = totRemainAll;
 
+  var mizrahiPaid = gameCounts['mizrahi_paid'] || 0;
+
   // Render group summary table
   var sumWrap = document.getElementById('sumWrap');
   var sumBody = document.getElementById('sumBody');
@@ -447,20 +449,17 @@ function render() {
   var sTotHeld=groupSumData.reduce(function(s,g){return s+(g.held||0);},0);
   sumFoot.innerHTML='<tr><td style="color:var(--accent)">סה"כ</td><td>'+sTotCap.toLocaleString()+'</td><td style="color:#6c9fd9">'+sTotSeason.toLocaleString()+'</td><td style="color:var(--accent2)">'+sTotPaid.toLocaleString()+'</td><td style="color:#a78bfa">'+sTotFree.toLocaleString()+'</td><td style="color:#fb923c">'+(sTotHeld>0?sTotHeld.toLocaleString()+' 🛒':'—')+'</td><td>'+sTotTaken.toLocaleString()+'</td><td style="color:var(--accent);font-weight:700">'+sTotRemain.toLocaleString()+'</td><td><span class="pb"><span class="pbf" style="width:'+sPct+'%;background:var(--accent2)"></span></span>'+sPct+'%</td></tr>';
   // Add מזרחי row to summary table
-  var mizrahiRow = '';
-  if (mizrahiPaid > 0) {
-    mizrahiRow = '<tr style="border-top:2px solid var(--border)">' +
-      '<td style="color:#f97316">🏟️ מזרחי</td>' +
-      '<td style="color:var(--muted)">2,000</td>' +
-      '<td style="color:#6c9fd9">—</td>' +
-      '<td style="color:var(--accent2)">' + mizrahiPaid.toLocaleString() + '</td>' +
-      '<td style="color:#a78bfa">—</td>' +
-      '<td>—</td>' +
-      '<td>' + mizrahiPaid.toLocaleString() + '</td>' +
-      '<td style="color:var(--accent);font-weight:700">' + (2000 - mizrahiPaid).toLocaleString() + '</td>' +
-      '<td><span class="pb"><span class="pbf ok" style="width:' + Math.round(mizrahiPaid/20) + '%"></span></span>' + Math.round(mizrahiPaid/20) + '%</td>' +
-      '</tr>';
-  }
+  var mizrahiRow = '<tr style="border-top:2px solid var(--border)">' +
+    '<td style="color:#f97316">🏟️ מזרחי</td>' +
+    '<td style="color:var(--muted)">2,000</td>' +
+    '<td style="color:#6c9fd9">—</td>' +
+    '<td style="color:var(--accent2)">' + (mizrahiPaid > 0 ? mizrahiPaid.toLocaleString() : '—') + '</td>' +
+    '<td style="color:#a78bfa">—</td>' +
+    '<td>—</td>' +
+    '<td>' + (mizrahiPaid > 0 ? mizrahiPaid.toLocaleString() : '—') + '</td>' +
+    '<td style="color:var(--accent);font-weight:700">' + (2000 - mizrahiPaid).toLocaleString() + '</td>' +
+    '<td><span class="pb"><span class="pbf ok" style="width:' + Math.round(mizrahiPaid/20) + '%"></span></span>' + Math.round(mizrahiPaid/20) + '%</td>' +
+    '</tr>';
   sumFoot.innerHTML = sumFoot.innerHTML + mizrahiRow;
   sumWrap.style.display = groupSumData.length ? 'block' : 'none';
   tfoot.innerHTML = '<tr>' +
@@ -486,7 +485,6 @@ function render() {
   var vipFreeGame = 0;
   VIP_SECS.forEach(function(s) { vipFreeGame += gameCounts[s+'_free']||0; });
 
-  var mizrahiPaid = gameCounts['mizrahi_paid'] || 0;
 
   summaryBar.innerHTML =
     '<span>קיבולת: <b>' + totCap.toLocaleString() + '</b></span>' +
