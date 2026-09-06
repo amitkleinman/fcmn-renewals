@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.4)</span></h1>
+  <h1><span class="dot"></span> 🎟️ זמינות כרטיסים <span style="font-size:11px;color:var(--muted);font-weight:400">(v5.5)</span></h1>
   <a href="index.html" class="back-link">← חזור לטרקר</a>
 </header>
 
@@ -432,9 +432,8 @@ function render() {
   var totPct = Math.round((totTaken + totAcc + totSavedInGroups)/totCap*100);
   var totRemainFinal = totRemainAll;
 
+  var homeRevenue = gameCounts['home_revenue'] || 0;
   var mizrahiPaid = gameCounts['mizrahi_paid'] || 0;
-
-  // Render group summary table
   var sumWrap = document.getElementById('sumWrap');
   var sumBody = document.getElementById('sumBody');
   var sumFoot = document.getElementById('sumFoot');
@@ -495,6 +494,7 @@ function render() {
     (vipFreeGame > 0 ? '<span>VIP חינם: <b style="color:#f59e0b">' + vipFreeGame.toLocaleString() + '</b></span>' : '') +
         (vipFreeGame > 0 ? '<span>סה"כ משחק (כולל VIP): <b style="color:var(--accent)">' + (totGame + mizrahiPaid + vipFreeGame).toLocaleString() + '</b></span>' : '') +
     (mizrahiPaid > 0 ? '<span>מזרחי: <b style="color:#f97316">' + mizrahiPaid.toLocaleString() + '</b></span>' : '') +
+    (homeRevenue > 0 ? '<span>סה"כ הכנסות קבוצת בית: <b style="color:var(--accent2)">₪' + homeRevenue.toLocaleString() + '</b></span>' : '') +
     '<span>נותר למכירה: <b style="color:var(--accent);font-size:15px">' + totRemainAll.toLocaleString() + '</b></span>' +
     '<span>ניצול: <b>' + totPct + '%</b></span>';
 }
