@@ -283,7 +283,7 @@ processBtn.addEventListener('click', async ()=>{
       const name=String(row['name']||'').trim();
       const hasPrice=price!==null&&price!==undefined&&price!==''&&!isNaN(Number(price))&&Number(price)>0;
       const priceVal=hasPrice?Number(price):0;
-      if(cat.includes('מזרחי')) { if(hasPrice) mizrahiPaidCount++; continue; } // count מזרחי separately
+      if(cat.includes('מזרחי')) { if(hasPrice) { mizrahiPaidCount++; homeRevenue += Number(row['price']||row['realPrice']||0); } continue; }
       if(hasPrice) homeRevenue += Number(row['price']||row['realPrice']||0);
       const origin = String(row['origin']||'').toLowerCase();
       const tName = String(row['ticketName']||'');
