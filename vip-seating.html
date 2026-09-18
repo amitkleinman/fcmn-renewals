@@ -76,7 +76,7 @@
 
 <header>
   <h1><span class="dot" ondblclick="window.location='index.html'" style="cursor:default"></span> מפת מושבים · VIP / פלטינום</h1>
-  <div class="subtitle">תצוגה בלבד — סטטוס תפוסה ושמות</div>
+  <div class="subtitle" id="subtitle">עדכון חי ● טוען...</div>
 </header>
 
 <div class="tabs" id="tabs"></div>
@@ -229,7 +229,7 @@ db.collection('meta').doc('seatStatus').onSnapshot(function(snap) {
   }
   renderTabs();
   renderMap(activeSection);
-  document.querySelector('.subtitle').textContent = 'עדכון חי ● ' + new Date().toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
+  document.querySelector('#subtitle').textContent = (document.querySelector('#subtitle').textContent.split('●')[0] || 'עדכון חי ') + '● עודכן ' + new Date().toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
 });
 
 // Subscribe to active game for game seat status
@@ -239,10 +239,17 @@ db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
   if (gameUnsub) { gameUnsub(); gameUnsub = null; }
   gameSeats = {};
   if (!snap.exists || !snap.data().eventId) {
+    document.getElementById('subtitle').textContent = 'עדכון חי ● אין משחק פעיל · מנויים בלבד';
     renderMap(activeSection);
     return;
   }
   const eventId = snap.data().eventId;
+  // Fetch game name
+  db.collection('gamesConfig').where('eventId', '==', eventId).get().then(function(gs) {
+    var gameName = 'משחק פעיל';
+    gs.forEach(function(d) { gameName = d.data().name || gameName; });
+    document.getElementById('subtitle').textContent = 'עדכון חי ● משחק: ' + gameName;
+  });
   gameUnsub = db.collection('gameSeating').doc(eventId).onSnapshot(function(gsnap) {
     gameSeats = {};
     if (gsnap.exists) {
