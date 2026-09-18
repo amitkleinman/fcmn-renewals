@@ -107,9 +107,16 @@ function renderTabs(){
   el.innerHTML = '';
   for(const section of SECTIONS){
     if(!MAP_DATA[section]) continue;
+    const data = MAP_DATA[section];
+    const total = SEATS[section] || data.seats.length;
+    const taken = data.seats.filter(function(s) {
+      var key = section + '|' + s.row + '|' + s.seat;
+      return liveStatus[key.toUpperCase()] || gameSeats[key.toUpperCase()];
+    }).length;
+    const free = total - taken;
     const tab = document.createElement('div');
     tab.className = 'tab' + (section===activeSection ? ' active' : '');
-    tab.textContent = SECTION_LABELS[section] || section;
+    tab.textContent = (SECTION_LABELS[section] || section) + ' (' + free + ')';
     tab.addEventListener('click', ()=>{
       activeSection = section;
       renderTabs();
