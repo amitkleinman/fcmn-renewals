@@ -248,7 +248,7 @@ db.collection('meta').doc('activeGame').onSnapshot(function(snap) {
   db.collection('gamesConfig').where('eventId', '==', eventId).get().then(function(gs) {
     var gameName = 'משחק פעיל';
     gs.forEach(function(d) { gameName = d.data().name || gameName; });
-    document.getElementById('subtitle').textContent = 'עדכון חי ● משחק: ' + gameName;
+    document.getElementById('subtitle').textContent = 'עדכון חי ● משחק: ' + gameName + ' · ' + eventId;
   });
   gameUnsub = db.collection('gameSeating').doc(eventId).onSnapshot(function(gsnap) {
     gameSeats = {};
